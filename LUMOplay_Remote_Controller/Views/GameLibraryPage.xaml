@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:LUMOplay_Remote_Controller.ViewModels"
+             x:Class="LUMOplay_Remote_Controller.Views.GameLibraryPage"
+             x:Name="GameLibraryPageRoot"
+             Title="Game Library">
+
+    <ContentPage.BindingContext>
+        <viewmodels:GameLibraryViewModel />
+    </ContentPage.BindingContext>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24,24,24,0" Spacing="16">
+
+            <!-- Device Picker -->
+            <HorizontalStackLayout Spacing="12" Margin="0,0,0,12">
+                <Label Text="Select Device:" FontSize="18" VerticalOptions="Center" />
+                <Picker ItemsSource="{Binding Devices}"
+                 ItemDisplayBinding="{Binding Name}"
+                 SelectedItem="{Binding SelectedDevice, Mode=TwoWay}"
+                 Title="Choose device"
+                 WidthRequest="250"
+                />
+            </HorizontalStackLayout>
+
+
+            <!-- Game Grid -->
+            <CollectionView ItemsSource="{Binding Games}"
+                            SelectionMode="None">
+                <CollectionView.ItemsLayout>
+                    <GridItemsLayout Orientation="Vertical" Span="3" />
+                </CollectionView.ItemsLayout>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame Padding="12" Margin="8" HasShadow="True" CornerRadius="12" BackgroundColor="#F7F8FA">
+                            <VerticalStackLayout Spacing="8">
+                                <Image Source="{Binding ImageUrl}" HeightRequest="120" WidthRequest="180" Aspect="AspectFill" BackgroundColor="#E0E0E0" />
+                                <Label Text="{Binding Name}" FontAttributes="Bold" FontSize="18" TextColor="Black" />
+                                <Label Text="{Binding LocationType}" FontSize="14" TextColor="#666" />
+                                <Button Text="Launch"
+                                        Command="{Binding BindingContext.LaunchGameCommand, Source={x:Reference Name=GameLibraryPageRoot}}"
+                                        CommandParameter="{Binding .}"
+                                        BackgroundColor="#5B4EFF"
+                                        TextColor="White"
+                                        CornerRadius="8"
+                                        Padding="8,0"
+                                        FontSize="16">
+                                    <Button.ImageSource>
+                                        <FontImageSource Glyph="&#x25B6;" FontFamily="MaterialIcons" Color="White" Size="18"/>
+                                    </Button.ImageSource>
+                                </Button>
+                            </VerticalStackLayout>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

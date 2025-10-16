@@ -13,17 +13,6 @@
     <ScrollView>
         <VerticalStackLayout Padding="24,24,24,0" Spacing="16">
 
-            <!-- Device Picker -->
-            <HorizontalStackLayout Spacing="12" Margin="0,0,0,12">
-                <Label Text="Select Device:" FontSize="18" VerticalOptions="Center" />
-                <Picker ItemsSource="{Binding Devices}"
-                 ItemDisplayBinding="{Binding Name}"
-                 SelectedItem="{Binding SelectedDevice, Mode=TwoWay}"
-                 Title="Choose device"
-                 WidthRequest="250"
-                />
-            </HorizontalStackLayout>
-
 
             <!-- Game Grid -->
             <CollectionView ItemsSource="{Binding Games}"
@@ -39,7 +28,7 @@
                                 <Label Text="{Binding Name}" FontAttributes="Bold" FontSize="18" TextColor="Black" />
                                 <Label Text="{Binding LocationType}" FontSize="14" TextColor="#666" />
                                 <Button Text="Launch"
-                                        Command="{Binding BindingContext.LaunchGameCommand, Source={x:Reference Name=GameLibraryPageRoot}}"
+                                        Clicked="OnLaunchButtonClicked"
                                         CommandParameter="{Binding .}"
                                         BackgroundColor="#5B4EFF"
                                         TextColor="White"

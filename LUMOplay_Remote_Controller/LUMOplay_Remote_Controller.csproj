@@ -64,7 +64,16 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Compile Update="Views\SelectDevicePopup.xaml.cs">
+	    <DependentUpon>SelectDevicePopup.xaml</DependentUpon>
+	  </Compile>
+	</ItemGroup>
+
+	<ItemGroup>
 	  <MauiXaml Update="Views\GameLibraryPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Views\SelectDevicePopup.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	</ItemGroup>

@@ -40,5 +40,14 @@ namespace LUMOplay_Remote_Controller.ViewModels
                 await service.PlayGameAsync(game);
             }
         }
+
+        public async Task LaunchGameAsync(LumoplayGame game, LumoplayDevice device)
+        {
+            if (device != null && game != null)
+            {
+                var service = new LumoplayService(device);
+                await service.PlayGameAsync(game);
+            }
+        }
     }
 }

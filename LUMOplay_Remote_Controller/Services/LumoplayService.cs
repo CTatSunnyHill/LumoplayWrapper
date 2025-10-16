@@ -146,17 +146,6 @@ namespace LUMOplay_Remote_Controller.Services
             return ExecuteCommandAsync("-previous");
         }
 
-        /// <summary>
-        /// Sets the volume level of the LUMOplay player.
-        /// </summary>
-        /// <param name="volume">Volume level between 0 and 100.</param>
-        /// <returns>True if the volume was set successfully; otherwise, false.</returns>
-        public Task<bool> SetVolumeAsync(int volume)
-        {
-            if (volume < 0 || volume > 100)
-                return Task.FromResult(false);
-
-            return ExecuteCommandAsync($"-volume {volume}");
-        }
+        
     }
 }

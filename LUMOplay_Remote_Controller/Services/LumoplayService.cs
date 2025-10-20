@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Text.Json;
 
 namespace LUMOplay_Remote_Controller.Services
 {
@@ -97,6 +98,37 @@ namespace LUMOplay_Remote_Controller.Services
             }
         }
 
+        private async Task<string?> ExecuteCommandAndGetOutputAsync(string command)
+        {
+            try
+            {
+                using var process = new Process();
+                process.StartInfo = new ProcessStartInfo
+                {
+                    FileName = _device.ExePath,
+                    Arguments = $"-a {_device.IpAddress} -k \"{_device.SecurityKey}\" {command}",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+
+                bool started = process.Start();
+                if (!started)
+                    return null;
+
+                var outputTask = process.StandardOutput.ReadToEndAsync();
+                await process.WaitForExitAsync();
+                string output = await outputTask;
+
+                return output;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         /// <summary>
         /// Starts playing a specific game on the LUMOplay platform.
         /// </summary>
@@ -146,6 +178,18 @@ namespace LUMOplay_Remote_Controller.Services
             return ExecuteCommandAsync("-previous");
         }
 
-        
+        /// <summary>
+        /// Returns the current game and playlist information.
+        /// </summary>
+        /// <returns>True if successfully returned the playlist information; otherwise, false.</returns>
+        public async Task<LumoplayServiceResponse?> CurrentGamePlaylistAsync()
+        {
+            var output = await ExecuteCommandAndGetOutputAsync("-N");
+            if (string.IsNullOrWhiteSpace(output))
+                return null;
+
+            return JsonSerializer.Deserialize<LumoplayServiceResponse>(output);
+        }
+
     }
 }

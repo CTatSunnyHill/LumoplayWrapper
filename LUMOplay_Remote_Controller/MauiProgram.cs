@@ -1,6 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
-using CommunityToolkit.Maui;
+﻿using CommunityToolkit.Maui;
 using LUMOplay_Remote_Controller.Services;
+using LUMOplay_Remote_Controller.ViewModels;
+using LUMOplay_Remote_Controller.Views;
+using Microsoft.Extensions.Logging;
 
 
 namespace LUMOplay_Remote_Controller
@@ -18,7 +20,9 @@ namespace LUMOplay_Remote_Controller
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
-     
+            builder.Services.AddSingleton<DashboardViewModel>();
+            builder.Services.AddTransient<DashboardPage>();
+
 
 #if DEBUG
             builder.Logging.AddDebug();

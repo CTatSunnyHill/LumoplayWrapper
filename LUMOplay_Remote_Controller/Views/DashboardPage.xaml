@@ -1,0 +1,42 @@
+    <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:LUMOplay_Remote_Controller.ViewModels"
+             xmlns:model="clr-namespace:LUMOplay_Remote_Controller.Model"
+             x:Class="LUMOplay_Remote_Controller.Views.DashboardPage"
+             x:DataType="vm:DashboardViewModel"
+             Title="Dashboard">
+    <ContentPage.BindingContext>
+        <vm:DashboardViewModel />
+    </ContentPage.BindingContext>
+    <ScrollView>
+        <VerticalStackLayout Padding="24">
+            <Label Text="Dashboard" FontSize="32" FontAttributes="Bold" />
+            <Label Text="Now Playing" FontSize="20" Margin="0,16,0,8" />
+            <CollectionView ItemsSource="{Binding Devices}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="model:DeviceState">
+                        <Frame Margin="8" Padding="16" BackgroundColor="White" CornerRadius="12">
+                            <VerticalStackLayout>
+                                <HorizontalStackLayout>
+                                    <Label Text="{Binding Device.Name}" FontSize="18" FontAttributes="Bold" />
+                                    <BoxView WidthRequest="8"/>
+                                    <Label Text="{Binding IsActive, Converter={StaticResource BoolToStatusConverter}}" 
+                                           TextColor="{Binding IsActive, Converter={StaticResource BoolToColorConverter}}" 
+                                           FontSize="14"/>
+                                </HorizontalStackLayout>
+                                <Image Source="{Binding CurrentGame.ImageUrl}" HeightRequest="80" WidthRequest="80" IsVisible="{Binding CurrentGame}" />
+                                <Label Text="{Binding CurrentGame.Name}" FontSize="16" IsVisible="{Binding CurrentGame}" />
+                                <Label Text="No Game Active" FontSize="16" IsVisible="{Binding CurrentGame, Converter={StaticResource NullToBoolConverter}}" />
+                                <HorizontalStackLayout Margin="0,12,0,0" HorizontalOptions="Center">
+                                    <Button Text="&lt;" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=PreviousGameCommand}" CommandParameter="{Binding .}" />
+                                    <Button Text="{Binding IsPlaying, Converter={StaticResource BoolToPlayPauseConverter}}" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=TogglePlayPauseCommand}" CommandParameter="{Binding .}" />
+                                    <Button Text="&gt;" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=NextGameCommand}" CommandParameter="{Binding .}" />
+                                </HorizontalStackLayout>
+                            </VerticalStackLayout>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

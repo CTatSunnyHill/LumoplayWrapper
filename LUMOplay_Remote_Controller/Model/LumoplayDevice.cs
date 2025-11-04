@@ -1,37 +1,37 @@
-﻿using System;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+    using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace LUMOplay_Remote_Controller.Model
 {
     /// <summary>
-    /// Represents a LUMOplay device with its connection details.
+    /// Represents a LUMOplay device with its connection details and current state.
     /// </summary>
-    public class LumoplayDevice
+    public partial class LumoplayDevice : ObservableObject
     {
-        /// <summary>
-        /// Gets or sets the friendly name of the device.
-        /// </summary>
-        public string Name { get; set; }
+        [ObservableProperty]
+        private string name;
 
-        /// <summary>
-        /// Gets or sets the IP address of the device.
-        /// </summary>
-        public string IpAddress { get; set; }
+        [ObservableProperty]
+        private string ipAddress;
 
-        /// <summary>
-        /// Gets or sets the security key for authentication.
-        /// </summary>
-        public string SecurityKey { get; set; }
+        [ObservableProperty]
+        private string securityKey;
 
-        /// <summary>
-        /// Gets or sets the path to the LUMOplay executable on this device.
-        /// </summary>
-        public string ExePath { get; set; }
+        [ObservableProperty]
+        private string exePath;
 
-        /// <summary>
-        /// Gets or sets whether the device is currently connected.
-        /// </summary>
-        public bool IsConnected { get; set; }
+        [ObservableProperty]
+        private bool isConnected;
+
+        [ObservableProperty]
+        private LumoplayGame? currentGame;
+
+        [ObservableProperty]
+        private List<LumoplayGame>? playlist;
+
+        [ObservableProperty]
+        private bool isPlaying;
     }
 }

@@ -34,7 +34,11 @@ namespace LUMOplay_Remote_Controller.Model
                     IpAddress = "10.5.43.118",
                     SecurityKey = "idoneusdigital",
                     ExePath = @"C:\Program Files\LUMOplay\MotionPlayer.Scripting.exe",
-                    IsConnected = false
+                    IsConnected = false,
+                    CurrentGame = null,
+                    Playlist = null,
+                    IsPlaying = false,
+                    
                 },
                 new LumoplayDevice
                 {
@@ -42,7 +46,11 @@ namespace LUMOplay_Remote_Controller.Model
                     IpAddress = "10.5.43.106",
                     SecurityKey = "idoneusdigital",
                     ExePath = @"C:\Program Files\LUMOplay\MotionPlayer.Scripting.exe",
-                    IsConnected = false
+                    IsConnected = false,
+                    CurrentGame = null,
+                    Playlist = null,
+                    IsPlaying = false,
+                    
                 },
                 new LumoplayDevice
                 {
@@ -50,7 +58,11 @@ namespace LUMOplay_Remote_Controller.Model
                     IpAddress = "10.5.43.109",
                     SecurityKey = "idoneusdigital",
                     ExePath = @"C:\Program Files\LUMOplay\MotionPlayer.Scripting.exe",
-                    IsConnected = false
+                    IsConnected = false,
+                    CurrentGame = null,
+                    Playlist = null,
+                    IsPlaying = false,
+                    
                 },
                 new LumoplayDevice
                 {
@@ -58,7 +70,11 @@ namespace LUMOplay_Remote_Controller.Model
                     IpAddress = "10.5.43.121",
                     SecurityKey = "idoneusdigital",
                     ExePath = @"C:\Program Files\LUMOplay\MotionPlayer.Scripting.exe",
-                    IsConnected = false
+                    IsConnected = false,
+                    CurrentGame = null,
+                    Playlist = null,
+                    IsPlaying = false,
+                  
                 },
                 new LumoplayDevice
                 {
@@ -66,7 +82,11 @@ namespace LUMOplay_Remote_Controller.Model
                     IpAddress = "10.5.43.120",
                     SecurityKey = "idoneusdigital",
                     ExePath = @"C:\Program Files\LUMOplay\MotionPlayer.Scripting.exe",
-                    IsConnected = false
+                    IsConnected = false,
+                    CurrentGame = null,
+                    Playlist = null,
+                    IsPlaying = false,
+                    
                 },
                 new LumoplayDevice
                 {
@@ -74,7 +94,11 @@ namespace LUMOplay_Remote_Controller.Model
                     IpAddress = "10.5.43.80",
                     SecurityKey = "idoneusdigital",
                     ExePath = @"C:\Program Files\LUMOplay\MotionPlayer.Scripting.exe",
-                    IsConnected = false
+                    IsConnected = false,
+                    CurrentGame = null,
+                    Playlist = null,
+                    IsPlaying = false,
+                   
                 },
                 new LumoplayDevice
                 {
@@ -82,7 +106,11 @@ namespace LUMOplay_Remote_Controller.Model
                     IpAddress = "10.5.43.99",
                     SecurityKey = "idoneusdigital",
                     ExePath = @"C:\Program Files\LUMOplay\MotionPlayer.Scripting.exe",
-                    IsConnected = false
+                    IsConnected = false,
+                    CurrentGame = null,
+                    Playlist = null,
+                    IsPlaying = false,
+                  
                 },
                 new LumoplayDevice
                 {
@@ -90,7 +118,11 @@ namespace LUMOplay_Remote_Controller.Model
                     IpAddress = "10.5.43.111",
                     SecurityKey = "idoneusdigital",
                     ExePath = @"C:\Program Files\LUMOplay\MotionPlayer.Scripting.exe",
-                    IsConnected = false
+                    IsConnected = false,
+                    CurrentGame = null,
+                    Playlist = null,
+                    IsPlaying = false,
+                   
                 },
                 new LumoplayDevice
                 {
@@ -98,7 +130,11 @@ namespace LUMOplay_Remote_Controller.Model
                     IpAddress = "10.5.43.81",
                     SecurityKey = "idoneusdigital",
                     ExePath = @"C:\Program Files\LUMOplay\MotionPlayer.Scripting.exe",
-                    IsConnected = false
+                    IsConnected = false,
+                    CurrentGame = null,
+                    Playlist = null,
+                    IsPlaying = false,
+                   
                 },
                 // Add more devices as needed
             };

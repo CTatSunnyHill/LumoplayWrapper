@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 using System.Text.Json;
 
@@ -38,6 +39,14 @@ namespace LUMOplay_Remote_Controller.Services
         {
             try
             {
+                // Check if the executable exists before attempting to run
+                if (!File.Exists(_device.ExePath))
+                {
+                    System.Diagnostics.Debug.WriteLine($"LUMOplay executable not found at: {_device.ExePath} for device {_device.Name}");
+                    _device.IsConnected = false;
+                    return false;
+                }
+
                 using var process = new Process();
                 process.StartInfo = new ProcessStartInfo
                 {
@@ -56,6 +65,7 @@ namespace LUMOplay_Remote_Controller.Services
                 if (!started)
                 {
                     System.Diagnostics.Debug.WriteLine($"Failed to start the process on device {_device.Name}");
+                    _device.IsConnected = false;
                     return false;
                 }
 
@@ -77,13 +87,6 @@ namespace LUMOplay_Remote_Controller.Services
                 if (!string.IsNullOrEmpty(error))
                 {
                     System.Diagnostics.Debug.WriteLine($"Command error from {_device.Name}: {error}");
-                }
-
-                // Check if the executable exists
-                if (!File.Exists(_device.ExePath))
-                {
-                    System.Diagnostics.Debug.WriteLine($"LUMOplay executable not found at: {_device.ExePath} for device {_device.Name}");
-                    return false;
                 }
 
                 _device.IsConnected = process.ExitCode == 0;
@@ -130,6 +133,17 @@ namespace LUMOplay_Remote_Controller.Services
         }
 
         /// <summary>
+        /// Checks the connection to the device by executing a simple command.
+        /// </summary>
+        /// <returns>True if the device is connected; otherwise, false.</returns>
+        public Task<bool> CheckConnectionAsync()
+        {
+            // Use the "-N" command as a lightweight way to check the connection.
+            // It requests the current game/playlist status.
+            return ExecuteCommandAsync("-N");
+        }
+
+        /// <summary>
         /// Starts playing a specific game on the LUMOplay platform.
         /// </summary>
         /// <param name="game">The game to play.</param>
@@ -140,7 +154,7 @@ namespace LUMOplay_Remote_Controller.Services
             return ExecuteCommandAsync($"-g {game.GameId}");
         }
 
-  
+
 
         /// <summary>
         /// Pauses the currently playing content.

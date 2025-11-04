@@ -43,22 +43,6 @@ namespace LUMOplay_Remote_Controller.Services
                             device.CurrentGame = LumoplayConfig.GetGameById(gameIndex);
                         
                         }
-                      
-
-                        // Find the full LumoplayGame object from the config using the ID.
-
-                        // Reconstruct the playlist with full LumoplayGame objects.
-                        if (status.Playlist != null)
-                        {
-                            device.Playlist = status.Playlist
-                                .Select(gameId => LumoplayConfig.GetGameById(gameId))
-                                .Where(game => game != null)
-                                .ToList()!;
-                        }
-                        else
-                        {
-                            device.Playlist = new List<LumoplayGame>();
-                        }
 
                         Debug.WriteLine($"SUCCESS: Synchronized state for device '{device.Name}'.");
                     }
@@ -101,12 +85,10 @@ namespace LUMOplay_Remote_Controller.Services
             {
                 device.CurrentGame = game;
                 device.IsPlaying = true;
-                device.IsActive = true;
             }
             else
             {
                 device.IsPlaying = false;
-                device.IsActive = false;
             }
         }
 

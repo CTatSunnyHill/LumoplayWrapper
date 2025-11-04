@@ -69,14 +69,14 @@ namespace LUMOplay_Remote_Controller.Services
             Debug.WriteLine("Device synchronization process completed.");
         }
 
-        public LumoplayDevice? GetDevice(string deviceName)
+        public LumoplayDevice? GetDevice(string deviceIPAddress)
         {
-            return Devices.FirstOrDefault(d => d.Name == deviceName);
+            return Devices.FirstOrDefault(d => d.IpAddress == deviceIPAddress);
         }
 
-        public async Task PlayGameAsync(string deviceName, LumoplayGame game)
+        public async Task PlayGameAsync(string deviceIPAddress, LumoplayGame game)
         {
-            var device = GetDevice(deviceName);
+            var device = GetDevice(deviceIPAddress);
             if (device == null) return;
 
             var service = new LumoplayService(device);
@@ -92,9 +92,9 @@ namespace LUMOplay_Remote_Controller.Services
             }
         }
 
-        public async Task PauseGameAsync(string deviceName)
+        public async Task PauseGameAsync(string deviceIPAddress)
         {
-            var device = GetDevice(deviceName);
+            var device = GetDevice(deviceIPAddress);
             if (device == null) return;
 
             var service = new LumoplayService(device);
@@ -105,9 +105,9 @@ namespace LUMOplay_Remote_Controller.Services
             }
         }
 
-        public async Task StopGameAsync(string deviceName)
+        public async Task StopGameAsync(string deviceIPAddress)
         {
-            var device = GetDevice(deviceName);
+            var device = GetDevice(deviceIPAddress);
             if (device == null) return;
 
             var service = new LumoplayService(device);
@@ -119,9 +119,9 @@ namespace LUMOplay_Remote_Controller.Services
             }
         }
 
-        public async Task NextGameAsync(string deviceName)
+        public async Task NextGameAsync(string deviceIPAddress)
         {
-            var device = GetDevice(deviceName);
+            var device = GetDevice(deviceIPAddress);
             if (device == null) return;
 
             var service = new LumoplayService(device);
@@ -138,9 +138,9 @@ namespace LUMOplay_Remote_Controller.Services
             }
         }
 
-        public async Task PreviousGameAsync(string deviceName)
+        public async Task PreviousGameAsync(string deviceIPAddress)
         {
-            var device = GetDevice(deviceName);
+            var device = GetDevice(deviceIPAddress);
             if (device == null) return;
 
             var service = new LumoplayService(device);

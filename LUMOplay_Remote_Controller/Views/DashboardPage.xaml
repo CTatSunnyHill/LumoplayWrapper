@@ -1,27 +1,24 @@
-    <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:LUMOplay_Remote_Controller.ViewModels"
              xmlns:model="clr-namespace:LUMOplay_Remote_Controller.Model"
              x:Class="LUMOplay_Remote_Controller.Views.DashboardPage"
              x:DataType="vm:DashboardViewModel"
              Title="Dashboard">
-    <ContentPage.BindingContext>
-        <vm:DashboardViewModel />
-    </ContentPage.BindingContext>
     <ScrollView>
         <VerticalStackLayout Padding="24">
             <Label Text="Dashboard" FontSize="32" FontAttributes="Bold" />
             <Label Text="Now Playing" FontSize="20" Margin="0,16,0,8" />
             <CollectionView ItemsSource="{Binding Devices}">
                 <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="model:DeviceState">
+                    <DataTemplate x:DataType="model:LumoplayDevice">
                         <Frame Margin="8" Padding="16" BackgroundColor="White" CornerRadius="12">
                             <VerticalStackLayout>
                                 <HorizontalStackLayout>
-                                    <Label Text="{Binding Device.Name}" FontSize="18" FontAttributes="Bold" />
+                                    <Label Text="{Binding Name}" FontSize="18" FontAttributes="Bold" />
                                     <BoxView WidthRequest="8"/>
-                                    <Label Text="{Binding IsActive, Converter={StaticResource BoolToStatusConverter}}" 
-                                           TextColor="{Binding IsActive, Converter={StaticResource BoolToColorConverter}}" 
+                                    <Label Text="{Binding IsConnected, Converter={StaticResource BoolToStatusConverter}}" 
+                                           TextColor="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}}" 
                                            FontSize="14"/>
                                 </HorizontalStackLayout>
                                 <Image Source="{Binding CurrentGame.ImageUrl}" HeightRequest="80" WidthRequest="80" IsVisible="{Binding CurrentGame}" />

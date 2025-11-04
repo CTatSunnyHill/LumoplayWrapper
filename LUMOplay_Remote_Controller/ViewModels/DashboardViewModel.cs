@@ -9,46 +9,47 @@ namespace LUMOplay_Remote_Controller.ViewModels
 {
     public partial class DashboardViewModel : ObservableObject
     {
-        public ObservableCollection<DeviceState> Devices => DeviceManager.Instance.Devices;
+        private readonly DeviceManager _deviceManager;
+        public ObservableCollection<LumoplayDevice> Devices => _deviceManager.Devices;
 
-        public DashboardViewModel()
+        public DashboardViewModel(DeviceManager deviceManager)
         {
-            // Optionally, refresh or load devices here
+            _deviceManager = deviceManager;
         }
 
         [RelayCommand]
-        private async Task PreviousGameAsync(DeviceState deviceState)
+        private async Task PreviousGameAsync(LumoplayDevice device)
         {
-            if (deviceState == null) return;
-            await DeviceManager.Instance.PreviousGameAsync(deviceState.Device.Name);
+            if (device == null) return;
+            await _deviceManager.PreviousGameAsync(device.IpAddress);
         }
 
         [RelayCommand]
-        private async Task TogglePlayPauseAsync(DeviceState deviceState)
+        private async Task TogglePlayPauseAsync(LumoplayDevice device)
         {
-            if (deviceState == null) return;
+            if (device == null) return;
 
-            if (deviceState.IsPlaying)
+            if (device.IsPlaying)
             {
-                await DeviceManager.Instance.PauseGameAsync(deviceState.Device.Name);
+                await _deviceManager.PauseGameAsync(device.IpAddress);
             }
             else
             {
                 // This assumes you want to resume the current game.
                 // If there's no current game, this might need different logic,
                 // like starting the first game in the playlist.
-                if (deviceState.CurrentGame != null)
+                if (device.CurrentGame != null)
                 {
-                    await DeviceManager.Instance.PlayGameAsync(deviceState.Device.Name, deviceState.CurrentGame);
+                    await _deviceManager.PlayGameAsync(device.IpAddress, device.CurrentGame);
                 }
             }
         }
 
         [RelayCommand]
-        private async Task NextGameAsync(DeviceState deviceState)
+        private async Task NextGameAsync(LumoplayDevice device)
         {
-            if (deviceState == null) return;
-            await DeviceManager.Instance.NextGameAsync(deviceState.Device.Name);
+            if (device == null) return;
+            await _deviceManager.NextGameAsync(device.IpAddress);
         }
     }
 }

@@ -21,5 +21,11 @@
             ContentTemplate="{DataTemplate views:GameLibraryPage}"
             Route="GameLibraryPage" />
     </FlyoutItem>
+    <FlyoutItem Title="Dashboard" Icon="library.png">
+        <ShellContent
+            Title="Dashboard"
+            ContentTemplate="{DataTemplate views:DashboardPage}"
+            Route="DashboardPage" />
+    </FlyoutItem>
 
 </Shell>

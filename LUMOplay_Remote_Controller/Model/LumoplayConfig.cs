@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
+using System.Text.Json;
 
 namespace LUMOplay_Remote_Controller.Model
 {
@@ -152,24 +153,19 @@ namespace LUMOplay_Remote_Controller.Model
             };
 
             // Initialize games
-            var games = new List<LumoplayGame>
+            var games = new List<LumoplayGame>();
+            try
             {
-                new LumoplayGame
-                {
-                    GameId = "11718",
-                    Name = "Bunny Hero",
-                    ImageUrl = "sample_game1.png",
-                    Description = "Protect your colony of bunnies from the hungry foxes chasing them away on this interactive floor game."
-                },
-                new LumoplayGame
-                {
-                    GameId = "10780",
-                    Name = "Ball Pit",
-                    ImageUrl = "sample_game2.png",
-                    Description = "Put a ball pit in any room and don't worry about cleaning up the mess. Kick these interactive balls around and they fall back."
-                }
-                // Add more games as needed
-            };
+                using var stream = FileSystem.OpenAppPackageFileAsync("games.json").GetAwaiter().GetResult();
+                using var reader = new StreamReader(stream);
+                var json = reader.ReadToEnd();
+                games = JsonSerializer.Deserialize<List<LumoplayGame>>(json);
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions (e.g., file not found, deserialization error)
+                Console.WriteLine($"Error loading games: {ex.Message}");
+            }
 
             Devices = new ReadOnlyCollection<LumoplayDevice>(devices);
             Games = new ReadOnlyCollection<LumoplayGame>(games);

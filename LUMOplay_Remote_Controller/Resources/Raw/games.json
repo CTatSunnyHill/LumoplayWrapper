@@ -14,13 +14,6 @@
         "LocationType": "Floor"
     },
     {
-        "GameId": "10780",
-        "Name": "Ball Pit",
-        "ImageUrl": "sample_game2.png",
-        "Description": "Put a ball pit in any room and don't worry about cleaning up the mess. Kick these interactive balls around and they fall back.",
-        "LocationType": "Wall"
-    },
-    {
         "GameId": "2284",
         "Name": "Love Bunnies",
         "ImageUrl": "sample_game2.png",
@@ -71,8 +64,8 @@
     },
     {
         "GameId": "7599",
-        "Name": "Snowball Fight",
-        "ImageUrl": "Counting Balloons",
+        "Name": "Counting Balloons",
+        "ImageUrl": "",
         "Description": "A fun interactive math game you can project on the wall or floor of your school, daycare, sensory room or gym. Practice counting balloons in order from 1 to 10!",
         "LocationType": "Wall"
     }

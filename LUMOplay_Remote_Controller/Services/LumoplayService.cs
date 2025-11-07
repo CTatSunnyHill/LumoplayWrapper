@@ -2,7 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
+using System.Text.Json;
 
 namespace LUMOplay_Remote_Controller.Services
 {
@@ -37,6 +39,14 @@ namespace LUMOplay_Remote_Controller.Services
         {
             try
             {
+                // Check if the executable exists before attempting to run
+                if (!File.Exists(_device.ExePath))
+                {
+                    System.Diagnostics.Debug.WriteLine($"LUMOplay executable not found at: {_device.ExePath} for device {_device.Name}");
+                    _device.IsConnected = false;
+                    return false;
+                }
+
                 using var process = new Process();
                 process.StartInfo = new ProcessStartInfo
                 {
@@ -55,6 +65,7 @@ namespace LUMOplay_Remote_Controller.Services
                 if (!started)
                 {
                     System.Diagnostics.Debug.WriteLine($"Failed to start the process on device {_device.Name}");
+                    _device.IsConnected = false;
                     return false;
                 }
 
@@ -78,13 +89,6 @@ namespace LUMOplay_Remote_Controller.Services
                     System.Diagnostics.Debug.WriteLine($"Command error from {_device.Name}: {error}");
                 }
 
-                // Check if the executable exists
-                if (!File.Exists(_device.ExePath))
-                {
-                    System.Diagnostics.Debug.WriteLine($"LUMOplay executable not found at: {_device.ExePath} for device {_device.Name}");
-                    return false;
-                }
-
                 _device.IsConnected = process.ExitCode == 0;
                 return _device.IsConnected;
             }
@@ -95,6 +99,48 @@ namespace LUMOplay_Remote_Controller.Services
                 _device.IsConnected = false;
                 return false;
             }
+        }
+
+        private async Task<string?> ExecuteCommandAndGetOutputAsync(string command)
+        {
+            try
+            {
+                using var process = new Process();
+                process.StartInfo = new ProcessStartInfo
+                {
+                    FileName = _device.ExePath,
+                    Arguments = $"-a {_device.IpAddress} -k \"{_device.SecurityKey}\" {command}",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+
+                bool started = process.Start();
+                if (!started)
+                    return null;
+
+                var outputTask = process.StandardOutput.ReadToEndAsync();
+                await process.WaitForExitAsync();
+                string output = await outputTask;
+
+                return output;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Checks the connection to the device by executing a simple command.
+        /// </summary>
+        /// <returns>True if the device is connected; otherwise, false.</returns>
+        public Task<bool> CheckConnectionAsync()
+        {
+            // Use the "-N" command as a lightweight way to check the connection.
+            // It requests the current game/playlist status.
+            return ExecuteCommandAsync("-N");
         }
 
         /// <summary>
@@ -108,7 +154,7 @@ namespace LUMOplay_Remote_Controller.Services
             return ExecuteCommandAsync($"-g {game.GameId}");
         }
 
-  
+
 
         /// <summary>
         /// Pauses the currently playing content.
@@ -116,7 +162,7 @@ namespace LUMOplay_Remote_Controller.Services
         /// <returns>True if the pause command was successful; otherwise, false.</returns>
         public Task<bool> PauseContentAsync()
         {
-            return ExecuteCommandAsync("-pause");
+            return ExecuteCommandAsync("-s");
         }
 
         /// <summary>
@@ -134,7 +180,7 @@ namespace LUMOplay_Remote_Controller.Services
         /// <returns>True if successfully moved to next content; otherwise, false.</returns>
         public Task<bool> NextContentAsync()
         {
-            return ExecuteCommandAsync("-next");
+            return ExecuteCommandAsync("-n");
         }
 
         /// <summary>
@@ -143,9 +189,21 @@ namespace LUMOplay_Remote_Controller.Services
         /// <returns>True if successfully moved to previous content; otherwise, false.</returns>
         public Task<bool> PreviousContentAsync()
         {
-            return ExecuteCommandAsync("-previous");
+            return ExecuteCommandAsync("-p");
         }
 
-        
+        /// <summary>
+        /// Returns the current game and playlist information.
+        /// </summary>
+        /// <returns>True if successfully returned the playlist information; otherwise, false.</returns>
+        public async Task<LumoplayServiceResponse?> CurrentGamePlaylistAsync()
+        {
+            var output = await ExecuteCommandAndGetOutputAsync("-N");
+            if (string.IsNullOrWhiteSpace(output))
+                return null;
+
+            return JsonSerializer.Deserialize<LumoplayServiceResponse>(output);
+        }
+
     }
 }

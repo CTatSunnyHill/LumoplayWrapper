@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
+using System.Text.Json;
 
 namespace LUMOplay_Remote_Controller.Model
 {
@@ -28,13 +29,29 @@ namespace LUMOplay_Remote_Controller.Model
             // Initialize devices
             var devices = new List<LumoplayDevice>
             {
+                 new LumoplayDevice
+                {
+                    Name = "TML",
+                    IpAddress = "10.5.43.186",
+                    SecurityKey = "idoneusdigital",
+                    ExePath = @"C:\Program Files\LUMOplay\MotionPlayer.Scripting.exe",
+                    IsConnected = false,
+                    CurrentGame = null,
+                    Playlist = null,
+                    IsPlaying = false,
+
+                },
                 new LumoplayDevice
                 {
                     Name = "GYM Wall Right",
                     IpAddress = "10.5.43.118",
                     SecurityKey = "idoneusdigital",
                     ExePath = @"C:\Program Files\LUMOplay\MotionPlayer.Scripting.exe",
-                    IsConnected = false
+                    IsConnected = false,
+                    CurrentGame = null,
+                    Playlist = null,
+                    IsPlaying = false,
+                    
                 },
                 new LumoplayDevice
                 {
@@ -42,7 +59,11 @@ namespace LUMOplay_Remote_Controller.Model
                     IpAddress = "10.5.43.106",
                     SecurityKey = "idoneusdigital",
                     ExePath = @"C:\Program Files\LUMOplay\MotionPlayer.Scripting.exe",
-                    IsConnected = false
+                    IsConnected = false,
+                    CurrentGame = null,
+                    Playlist = null,
+                    IsPlaying = false,
+                    
                 },
                 new LumoplayDevice
                 {
@@ -50,7 +71,11 @@ namespace LUMOplay_Remote_Controller.Model
                     IpAddress = "10.5.43.109",
                     SecurityKey = "idoneusdigital",
                     ExePath = @"C:\Program Files\LUMOplay\MotionPlayer.Scripting.exe",
-                    IsConnected = false
+                    IsConnected = false,
+                    CurrentGame = null,
+                    Playlist = null,
+                    IsPlaying = false,
+                    
                 },
                 new LumoplayDevice
                 {
@@ -58,7 +83,11 @@ namespace LUMOplay_Remote_Controller.Model
                     IpAddress = "10.5.43.121",
                     SecurityKey = "idoneusdigital",
                     ExePath = @"C:\Program Files\LUMOplay\MotionPlayer.Scripting.exe",
-                    IsConnected = false
+                    IsConnected = false,
+                    CurrentGame = null,
+                    Playlist = null,
+                    IsPlaying = false,
+                  
                 },
                 new LumoplayDevice
                 {
@@ -66,7 +95,11 @@ namespace LUMOplay_Remote_Controller.Model
                     IpAddress = "10.5.43.120",
                     SecurityKey = "idoneusdigital",
                     ExePath = @"C:\Program Files\LUMOplay\MotionPlayer.Scripting.exe",
-                    IsConnected = false
+                    IsConnected = false,
+                    CurrentGame = null,
+                    Playlist = null,
+                    IsPlaying = false,
+                    
                 },
                 new LumoplayDevice
                 {
@@ -74,7 +107,11 @@ namespace LUMOplay_Remote_Controller.Model
                     IpAddress = "10.5.43.80",
                     SecurityKey = "idoneusdigital",
                     ExePath = @"C:\Program Files\LUMOplay\MotionPlayer.Scripting.exe",
-                    IsConnected = false
+                    IsConnected = false,
+                    CurrentGame = null,
+                    Playlist = null,
+                    IsPlaying = false,
+                   
                 },
                 new LumoplayDevice
                 {
@@ -82,7 +119,11 @@ namespace LUMOplay_Remote_Controller.Model
                     IpAddress = "10.5.43.99",
                     SecurityKey = "idoneusdigital",
                     ExePath = @"C:\Program Files\LUMOplay\MotionPlayer.Scripting.exe",
-                    IsConnected = false
+                    IsConnected = false,
+                    CurrentGame = null,
+                    Playlist = null,
+                    IsPlaying = false,
+                  
                 },
                 new LumoplayDevice
                 {
@@ -90,7 +131,11 @@ namespace LUMOplay_Remote_Controller.Model
                     IpAddress = "10.5.43.111",
                     SecurityKey = "idoneusdigital",
                     ExePath = @"C:\Program Files\LUMOplay\MotionPlayer.Scripting.exe",
-                    IsConnected = false
+                    IsConnected = false,
+                    CurrentGame = null,
+                    Playlist = null,
+                    IsPlaying = false,
+                   
                 },
                 new LumoplayDevice
                 {
@@ -98,30 +143,29 @@ namespace LUMOplay_Remote_Controller.Model
                     IpAddress = "10.5.43.81",
                     SecurityKey = "idoneusdigital",
                     ExePath = @"C:\Program Files\LUMOplay\MotionPlayer.Scripting.exe",
-                    IsConnected = false
+                    IsConnected = false,
+                    CurrentGame = null,
+                    Playlist = null,
+                    IsPlaying = false,
+                   
                 },
                 // Add more devices as needed
             };
 
             // Initialize games
-            var games = new List<LumoplayGame>
+            var games = new List<LumoplayGame>();
+            try
             {
-                new LumoplayGame
-                {
-                    GameId = "11718",
-                    Name = "Bunny Hero",
-                    ImageUrl = "sample_game1.png",
-                    Description = "Protect your colony of bunnies from the hungry foxes chasing them away on this interactive floor game."
-                },
-                new LumoplayGame
-                {
-                    GameId = "10780",
-                    Name = "Ball Pit",
-                    ImageUrl = "sample_game2.png",
-                    Description = "Put a ball pit in any room and don't worry about cleaning up the mess. Kick these interactive balls around and they fall back."
-                }
-                // Add more games as needed
-            };
+                using var stream = FileSystem.OpenAppPackageFileAsync("games.json").GetAwaiter().GetResult();
+                using var reader = new StreamReader(stream);
+                var json = reader.ReadToEnd();
+                games = JsonSerializer.Deserialize<List<LumoplayGame>>(json);
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions (e.g., file not found, deserialization error)
+                Console.WriteLine($"Error loading games: {ex.Message}");
+            }
 
             Devices = new ReadOnlyCollection<LumoplayDevice>(devices);
             Games = new ReadOnlyCollection<LumoplayGame>(games);
@@ -145,6 +189,11 @@ namespace LUMOplay_Remote_Controller.Model
         public static LumoplayGame GetGameById(string gameId)
         {
             return Games.FirstOrDefault(g => g.GameId == gameId);
+        }
+
+        public static LumoplayGame GetGameById(int gameId)
+        {
+            return Games.FirstOrDefault(g => Convert.ToInt64(g.GameId) == gameId);
         }
     }
 }

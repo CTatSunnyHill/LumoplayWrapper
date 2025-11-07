@@ -1,0 +1,72 @@
+[
+    {
+        "GameId": "11718",
+        "Name": "Bunny Hero",
+        "ImageUrl": "sample_game1.png",
+        "Description": "Protect your colony of bunnies from the hungry foxes chasing them away on this interactive floor game.",
+        "LocationType": "Wall" 
+    },
+    {
+        "GameId": "10780",
+        "Name": "Ball Pit",
+        "ImageUrl": "sample_game2.png",
+        "Description": "Put a ball pit in any room and don't worry about cleaning up the mess. Kick these interactive balls around and they fall back.",
+        "LocationType": "Floor"
+    },
+    {
+        "GameId": "2284",
+        "Name": "Love Bunnies",
+        "ImageUrl": "sample_game2.png",
+        "Description": "A beautiful and romantic interactive floor or wall projection for Valentines Day. The heart will explode with the love of our two adorable bunnies!",
+        "LocationType": "Wall"
+    },
+    {
+        "GameId": "19914",
+        "Name": "Glass Ball Pit",
+        "ImageUrl": "sample_game2.png",
+        "Description": "Have you ever yearned for a ball pit where all the plastic balls were made of glass? Yearn no more! Glass Ball Pit is a perfect interactive and sensory experience, ideal for play centers and daycares.",
+        "LocationType": "Wall"
+    },
+    {
+        "GameId": "12738",
+        "Name": "Japanese Koi",
+        "ImageUrl": "sample_game2.png",
+        "Description": "Beautiful painted koi swim peacefully around this stylized Japanese pond. Walk across this interactive floor to create ripples and chase the fish around.",
+        "LocationType": "Wall"
+    },
+    {
+        "GameId": "6624",
+        "Name": "Spider Wall Crawlers",
+        "ImageUrl": "sample_game2.png",
+        "Description": "This interactive gym wall game was designed for making wall ball in Phys Ed class a little more fun and interactive. Project this creepy Halloween inspired game on the wall and throw balls at the spiders to squish them! Also works on the floor if you prefer stomping.",
+        "LocationType": "Wall"
+    },
+    {
+        "GameId": "6625",
+        "Name": "Bug Wall Crawlers",
+        "ImageUrl": "sample_game2.png",
+        "Description": "This interactive gym wall game was designed for making wall ball in Phys Ed class a little more fun. Project this game on the wall and throw balls at the animated insects to squish them.",
+        "LocationType": "Wall"
+    },
+    {
+        "GameId": "6773",
+        "Name": "Wall Defenders",
+        "ImageUrl": "sample_game2.png",
+        "Description": "This interactive gym wall game was designed for making wall ball in Phys Ed class a little more fun and interactive. Project this game on the wall and throw balls at the geometric shapes that are trying to get to your base. Defend your base!",
+        "LocationType": "Wall"
+    },
+    {
+        "GameId": "10618",
+        "Name": "Snowball Fight",
+        "ImageUrl": "sample_game2.png",
+        "Description": "Snowball fight interactive wall ball game features jolly music and snow monsters! Play until you lose. Aim for a high score.",
+        "LocationType": "Wall"
+    },
+    {
+        "GameId": "7599",
+        "Name": "Counting Balloons",
+        "ImageUrl": "",
+        "Description": "A fun interactive math game you can project on the wall or floor of your school, daycare, sensory room or gym. Practice counting balloons in order from 1 to 10!",
+        "LocationType": "Wall"
+    }
+]

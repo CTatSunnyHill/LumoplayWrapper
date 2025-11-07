@@ -19,6 +19,7 @@ namespace LUMOplay_Remote_Controller
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+                    fonts.AddFont("MaterialIcons-Regular.ttf", "MaterialIcons");
                 });
             builder.Services.AddSingleton<DashboardViewModel>();
             builder.Services.AddSingleton<DeviceManager>();

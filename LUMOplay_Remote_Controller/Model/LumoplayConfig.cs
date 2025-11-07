@@ -28,6 +28,18 @@ namespace LUMOplay_Remote_Controller.Model
             // Initialize devices
             var devices = new List<LumoplayDevice>
             {
+                 new LumoplayDevice
+                {
+                    Name = "TML",
+                    IpAddress = "10.5.43.186",
+                    SecurityKey = "idoneusdigital",
+                    ExePath = @"C:\Program Files\LUMOplay\MotionPlayer.Scripting.exe",
+                    IsConnected = false,
+                    CurrentGame = null,
+                    Playlist = null,
+                    IsPlaying = false,
+
+                },
                 new LumoplayDevice
                 {
                     Name = "GYM Wall Right",
@@ -181,6 +193,11 @@ namespace LUMOplay_Remote_Controller.Model
         public static LumoplayGame GetGameById(string gameId)
         {
             return Games.FirstOrDefault(g => g.GameId == gameId);
+        }
+
+        public static LumoplayGame GetGameById(int gameId)
+        {
+            return Games.FirstOrDefault(g => Convert.ToInt64(g.GameId) == gameId);
         }
     }
 }

@@ -2,38 +2,86 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:LUMOplay_Remote_Controller.ViewModels"
              xmlns:model="clr-namespace:LUMOplay_Remote_Controller.Model"
+             xmlns:converters="clr-namespace:LUMOplay_Remote_Controller.Converters"
              x:Class="LUMOplay_Remote_Controller.Views.DashboardPage"
              x:DataType="vm:DashboardViewModel"
-             Title="Dashboard">
+             Title="Dashboard"
+             BackgroundColor="#F0F2F5">
+    <ContentPage.Resources>
+        <converters:BoolToColorConverter x:Key="BoolToColorConverter" />
+        <converters:BoolToPlayPauseIconConverter x:Key="BoolToPlayPauseIconConverter" />
+        <converters:BoolToStatusConverter x:Key="BoolToStatusConverter" />
+        <converters:NullToBoolConverter x:Key="NullToBoolConverter" />
+        <Style TargetType="Button" x:Key="MediaButtonStyle">
+            <Setter Property="FontSize" Value="24" />
+            <Setter Property="FontFamily" Value="MaterialIcons" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="12,0" />
+            <Setter Property="WidthRequest" Value="48" />
+            <Setter Property="HeightRequest" Value="48" />
+            <Setter Property="CornerRadius" Value="24" />
+            <Setter Property="BorderWidth" Value="0" />
+            <Setter Property="BackgroundColor" Value="Transparent" />
+        </Style>
+    </ContentPage.Resources>
     <ScrollView>
         <VerticalStackLayout Padding="24">
-            <Label Text="Dashboard" FontSize="32" FontAttributes="Bold" />
-            <Label Text="Now Playing" FontSize="20" Margin="0,16,0,8" />
-            <CollectionView ItemsSource="{Binding Devices}">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="model:LumoplayDevice">
-                        <Frame Margin="8" Padding="16" BackgroundColor="White" CornerRadius="12">
-                            <VerticalStackLayout>
-                                <HorizontalStackLayout>
-                                    <Label Text="{Binding Name}" FontSize="18" FontAttributes="Bold" />
-                                    <BoxView WidthRequest="8"/>
-                                    <Label Text="{Binding IsConnected, Converter={StaticResource BoolToStatusConverter}}" 
-                                           TextColor="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}}" 
-                                           FontSize="14"/>
-                                </HorizontalStackLayout>
-                                <Image Source="{Binding CurrentGame.ImageUrl}" HeightRequest="80" WidthRequest="80" IsVisible="{Binding CurrentGame}" />
-                                <Label Text="{Binding CurrentGame.Name}" FontSize="16" IsVisible="{Binding CurrentGame}" />
-                                <Label Text="No Game Active" FontSize="16" IsVisible="{Binding CurrentGame, Converter={StaticResource NullToBoolConverter}}" />
-                                <HorizontalStackLayout Margin="0,12,0,0" HorizontalOptions="Center">
-                                    <Button Text="&lt;" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=PreviousGameCommand}" CommandParameter="{Binding .}" />
-                                    <Button Text="{Binding IsPlaying, Converter={StaticResource BoolToPlayPauseConverter}}" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=TogglePlayPauseCommand}" CommandParameter="{Binding .}" />
-                                    <Button Text="&gt;" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=NextGameCommand}" CommandParameter="{Binding .}" />
-                                </HorizontalStackLayout>
-                            </VerticalStackLayout>
-                        </Frame>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
+            <Label Text="Now Playing" FontSize="20" Margin="0,16,0,8" TextColor="#4A4A4A" />
+            <Frame Padding="24" CornerRadius="8" BorderColor="Transparent" BackgroundColor="White">
+               
+                <CollectionView ItemsSource="{Binding Devices}">
+                    <CollectionView.ItemsLayout>
+                        <GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="24" VerticalItemSpacing="24" />
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="model:LumoplayDevice">
+                            <Frame Padding="16" BorderColor="#E0E0E0" CornerRadius="8" HasShadow="False">
+                                <Grid RowDefinitions="Auto, *, Auto">
+                                    <!-- Header: Device Name and Status -->
+                                    <Grid Grid.Row="0" ColumnDefinitions="*, Auto">
+                                        <Label Text="{Binding Name}" FontSize="16" FontAttributes="Bold" VerticalOptions="Center" />
+                                        <HorizontalStackLayout Grid.Column="1" VerticalOptions="Center">
+                                            <Ellipse WidthRequest="8" HeightRequest="8" Margin="0,0,4,0" Fill="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}}" />
+                                            <Label Text="{Binding IsConnected, Converter={StaticResource BoolToStatusConverter}}" 
+                                                   TextColor="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}}" 
+                                                   FontSize="14" />
+                                        </HorizontalStackLayout>
+                                    </Grid>
+
+                                    <!-- Content: Game Info or No Game Active -->
+                                    <Grid Grid.Row="1" Margin="0,16" ColumnDefinitions="Auto, *" ColumnSpacing="12">
+                                        <!-- Active Game -->
+                                        <Grid IsVisible="{Binding CurrentGame}">
+                                            <Image Source="{Binding CurrentGame.ImageUrl}" HeightRequest="60" WidthRequest="60" Aspect="AspectFill" />
+                                            <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                                                <Label Text="{Binding CurrentGame.Name}" FontSize="16" FontAttributes="Bold" />
+                                                <Label Text="{Binding Id, StringFormat='Device: {0}'}" FontSize="12" TextColor="Gray" />
+                                            </VerticalStackLayout>
+                                        </Grid>
+                                        <!-- No Game Active -->
+                                        <Grid IsVisible="{Binding CurrentGame, Converter={StaticResource NullToBoolConverter}}" ColumnDefinitions="Auto, *" ColumnSpacing="12">
+                                            <Frame BackgroundColor="#F0F2F5" BorderColor="Transparent" CornerRadius="4" HeightRequest="60" WidthRequest="60">
+                                                <Image Source="no_game.png" Aspect="AspectFit" HeightRequest="32" WidthRequest="32" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                            </Frame>
+                                            <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                                                <Label Text="No Game Active" FontSize="16" FontAttributes="Bold" />
+                                                <Label Text="{Binding Id, StringFormat='Device: {0}'}" FontSize="12" TextColor="Gray" />
+                                            </VerticalStackLayout>
+                                        </Grid>
+                                    </Grid>
+
+                                    <!-- Footer: Media Controls -->
+                                    <HorizontalStackLayout Grid.Row="2" HorizontalOptions="Center">
+                                        <Button Text="&#xE045;" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=PreviousGameCommand}" CommandParameter="{Binding .}" Style="{StaticResource MediaButtonStyle}" TextColor="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='MediaControl'}"/>
+                                        <Button Text="{Binding IsPlaying, Converter={StaticResource BoolToPlayPauseIconConverter}}" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=TogglePlayPauseCommand}" CommandParameter="{Binding .}" Style="{StaticResource MediaButtonStyle}" BackgroundColor="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='PlayPause'}" TextColor="White"/>
+                                        <Button Text="&#xE044;" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=NextGameCommand}" CommandParameter="{Binding .}" Style="{StaticResource MediaButtonStyle}" TextColor="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='MediaControl'}"/>
+                                    </HorizontalStackLayout>
+                                </Grid>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </Frame>
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

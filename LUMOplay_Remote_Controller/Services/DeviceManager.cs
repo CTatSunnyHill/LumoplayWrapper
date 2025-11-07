@@ -37,14 +37,18 @@ namespace LUMOplay_Remote_Controller.Services
                         // Connection successful, update the state.
                         device.IsConnected = true;
 
-                        if (response.NowPlayingIndex != null) { 
+                        if (response.NowPlayingIndex.HasValue)
+                        {
+                            int nowPlayingIndex = response.NowPlayingIndex.Value;
+                            Debug.WriteLine($"SUCCESS: Now Playing Index: '{nowPlayingIndex}'");
+                            int gameId = response.Scenes[nowPlayingIndex].Scene.ID;
+                            Debug.WriteLine($"SUCCESS: Now Playing Scene: '{gameId}'");
+
                             device.IsPlaying = true;
-                            string gameIndex = Convert.ToString(response.NowPlayingIndex.Value);
-                            device.CurrentGame = LumoplayConfig.GetGameById(gameIndex);
-                        
+                            device.CurrentGame = LumoplayConfig.GetGameById(gameId);
                         }
 
-                        Debug.WriteLine($"SUCCESS: Synchronized state for device '{device.Name}'.");
+                        Debug.WriteLine($"SUCCESS: Synchronized state for device '{device.Name}'. Current game '{device.CurrentGame}'");
                     }
                     else
                     {

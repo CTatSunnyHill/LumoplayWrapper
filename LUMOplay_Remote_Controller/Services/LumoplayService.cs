@@ -162,7 +162,7 @@ namespace LUMOplay_Remote_Controller.Services
         /// <returns>True if the pause command was successful; otherwise, false.</returns>
         public Task<bool> PauseContentAsync()
         {
-            return ExecuteCommandAsync("-pause");
+            return ExecuteCommandAsync("-s");
         }
 
         /// <summary>
@@ -180,7 +180,7 @@ namespace LUMOplay_Remote_Controller.Services
         /// <returns>True if successfully moved to next content; otherwise, false.</returns>
         public Task<bool> NextContentAsync()
         {
-            return ExecuteCommandAsync("-next");
+            return ExecuteCommandAsync("-n");
         }
 
         /// <summary>
@@ -189,7 +189,7 @@ namespace LUMOplay_Remote_Controller.Services
         /// <returns>True if successfully moved to previous content; otherwise, false.</returns>
         public Task<bool> PreviousContentAsync()
         {
-            return ExecuteCommandAsync("-previous");
+            return ExecuteCommandAsync("-p");
         }
 
         /// <summary>

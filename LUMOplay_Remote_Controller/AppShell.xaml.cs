@@ -7,8 +7,8 @@ namespace LUMOplay_Remote_Controller
         public AppShell()
         {
             InitializeComponent();
-            Routing.RegisterRoute(nameof(GameLibraryPage), typeof(GameLibraryPage));
             Routing.RegisterRoute(nameof(DashboardPage), typeof(DashboardPage));
+            Routing.RegisterRoute(nameof(GameLibraryPage), typeof(GameLibraryPage));
         }
     }
 }

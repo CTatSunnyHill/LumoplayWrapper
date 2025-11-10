@@ -6,10 +6,10 @@ namespace LUMOplay_Remote_Controller.Views
 {
     public partial class GameLibraryPage : ContentPage
     {
-        public GameLibraryPage()
+        public GameLibraryPage(GameLibraryViewModel viewModel)
         {
             InitializeComponent();
-            BindingContext = new GameLibraryViewModel();
+            BindingContext = viewModel;
         }
 
         private async void OnLaunchButtonClicked(object sender, EventArgs e)

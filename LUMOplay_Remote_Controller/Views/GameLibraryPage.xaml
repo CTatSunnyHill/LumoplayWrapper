@@ -6,9 +6,7 @@
              x:Name="GameLibraryPageRoot"
              Title="Game Library">
 
-    <ContentPage.BindingContext>
-        <viewmodels:GameLibraryViewModel />
-    </ContentPage.BindingContext>
+ 
 
     <ScrollView>
         <VerticalStackLayout Padding="24,24,24,0" Spacing="16">

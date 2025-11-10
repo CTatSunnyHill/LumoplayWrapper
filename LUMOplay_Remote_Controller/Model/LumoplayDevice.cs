@@ -29,7 +29,7 @@ namespace LUMOplay_Remote_Controller.Model
         private LumoplayGame? currentGame;
 
         [ObservableProperty]
-        private List<LumoplayGame>? playlist;
+        private Playlist? playlist;
 
         [ObservableProperty]
         private bool isPlaying;

@@ -27,11 +27,14 @@ namespace LUMOplay_Remote_Controller
 #endif
 
             builder.Services.AddSingleton<DeviceManager>();
+            builder.Services.AddSingleton<PlaylistManager>();
             builder.Services.AddSingleton<DashboardViewModel>();
             builder.Services.AddSingleton<DashboardPage>();
 
             builder.Services.AddTransient<GameLibraryViewModel>();
             builder.Services.AddTransient<GameLibraryPage>();
+            builder.Services.AddTransient<PlaylistViewModel>();
+            builder.Services.AddTransient<PlaylistPage>();
 
 
             return builder.Build();

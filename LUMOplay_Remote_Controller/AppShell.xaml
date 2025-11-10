@@ -8,11 +8,18 @@
     Title="LUMOplay_Remote_Controller"
     FlyoutBehavior="Locked">
 
-    <FlyoutItem Title="Home" Icon="home.png">
+    <FlyoutItem Title="Dashboard" Icon="library.png">
         <ShellContent
-            Title="Home"
-            ContentTemplate="{DataTemplate local:MainPage}"
-            Route="MainPage" />
+            Title="Dashboard"
+            ContentTemplate="{DataTemplate views:DashboardPage}"
+            Route="DashboardPage" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Playlists" Icon="library.png">
+        <ShellContent
+            Title="PLaylists"
+            ContentTemplate="{DataTemplate views:PlaylistPage}"
+            Route="PlaylistPage" />
     </FlyoutItem>
 
     <FlyoutItem Title="Game Library" Icon="library.png">
@@ -20,12 +27,6 @@
             Title="Game Library"
             ContentTemplate="{DataTemplate views:GameLibraryPage}"
             Route="GameLibraryPage" />
-    </FlyoutItem>
-    <FlyoutItem Title="Dashboard" Icon="library.png">
-        <ShellContent
-            Title="Dashboard"
-            ContentTemplate="{DataTemplate views:DashboardPage}"
-            Route="DashboardPage" />
     </FlyoutItem>
 
 </Shell>

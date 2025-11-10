@@ -9,6 +9,7 @@ namespace LUMOplay_Remote_Controller
             InitializeComponent();
             Routing.RegisterRoute(nameof(DashboardPage), typeof(DashboardPage));
             Routing.RegisterRoute(nameof(GameLibraryPage), typeof(GameLibraryPage));
+            Routing.RegisterRoute(nameof(PlaylistPage), typeof(PlaylistPage));
         }
     }
 }

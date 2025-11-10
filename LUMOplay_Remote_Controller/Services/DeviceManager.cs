@@ -135,9 +135,9 @@ namespace LUMOplay_Remote_Controller.Services
                 // Optionally update CurrentGame from playlist
                 if (device.Playlist != null && device.CurrentGame != null)
                 {
-                    int idx = device.Playlist.IndexOf(device.CurrentGame);
-                    if (idx >= 0 && idx < device.Playlist.Count - 1)
-                        device.CurrentGame = device.Playlist[idx + 1];
+                    int idx = device.Playlist.Games.IndexOf(device.CurrentGame);
+                    if (idx >= 0 && idx < device.Playlist.Games.Count - 1)
+                        device.CurrentGame = device.Playlist.Games[idx + 1];
                 }
             }
         }
@@ -154,9 +154,9 @@ namespace LUMOplay_Remote_Controller.Services
                 // Optionally update CurrentGame from playlist
                 if (device.Playlist != null && device.CurrentGame != null)
                 {
-                    int idx = device.Playlist.IndexOf(device.CurrentGame);
+                    int idx = device.Playlist.Games.IndexOf(device.CurrentGame);
                     if (idx > 0)
-                        device.CurrentGame = device.Playlist[idx - 1];
+                        device.CurrentGame = device.Playlist.Games[idx - 1];
                 }
             }
         }

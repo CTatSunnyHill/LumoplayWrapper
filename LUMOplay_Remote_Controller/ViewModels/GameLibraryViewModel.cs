@@ -10,18 +10,19 @@ namespace LUMOplay_Remote_Controller.ViewModels
 {
     public partial class GameLibraryViewModel : ObservableObject
     {
+        private readonly DeviceManager _deviceManager;
         public ObservableCollection<LumoplayGame> Games { get; }
-        public ObservableCollection<LumoplayDevice> Devices { get; }
+        public ObservableCollection<LumoplayDevice> Devices => _deviceManager.Devices;
 
         [ObservableProperty]
         private LumoplayDevice selectedDevice;
 
         public IRelayCommand<LumoplayGame> LaunchGameCommand { get; }
 
-        public GameLibraryViewModel()
+        public GameLibraryViewModel(DeviceManager deviceManager)
         {
+            _deviceManager = deviceManager;
             Games = new ObservableCollection<LumoplayGame>(LumoplayConfig.Games);
-            Devices = new ObservableCollection<LumoplayDevice>(LumoplayConfig.Devices);
             SelectedDevice = Devices.FirstOrDefault();
             LaunchGameCommand = new RelayCommand<LumoplayGame>(OnLaunchGame, CanLaunchGame);
         }
@@ -35,9 +36,7 @@ namespace LUMOplay_Remote_Controller.ViewModels
         {
             if (SelectedDevice != null && game != null)
             {
-                System.Diagnostics.Debug.WriteLine($"Trying to Launch LumoPlay service using ViewModel on Device {nameof(SelectedDevice)}");
-                var service = new LumoplayService(SelectedDevice);
-                await service.PlayGameAsync(game);
+                await _deviceManager.PlayGameAsync(SelectedDevice.IpAddress, game);
             }
         }
 
@@ -45,8 +44,7 @@ namespace LUMOplay_Remote_Controller.ViewModels
         {
             if (device != null && game != null)
             {
-                var service = new LumoplayService(device);
-                await service.PlayGameAsync(game);
+                await _deviceManager.PlayGameAsync(device.IpAddress, game);
             }
         }
     }

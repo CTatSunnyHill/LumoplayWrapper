@@ -21,19 +21,18 @@ namespace LUMOplay_Remote_Controller
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                     fonts.AddFont("MaterialIcons-Regular.ttf", "MaterialIcons");
                 });
+
+#if DEBUG
+    		builder.Logging.AddDebug();
+#endif
+
             builder.Services.AddSingleton<DeviceManager>();
-            builder.Services.AddTransient<DashboardViewModel>();
-            builder.Services.AddTransient<DashboardPage>();
+            builder.Services.AddSingleton<DashboardViewModel>();
+            builder.Services.AddSingleton<DashboardPage>();
 
             builder.Services.AddTransient<GameLibraryViewModel>();
             builder.Services.AddTransient<GameLibraryPage>();
-            builder.Services.AddTransient<SelectDevicePopupViewModel>();
-            builder.Services.AddTransient<SelectDevicePopup>();
 
-
-#if DEBUG
-            builder.Logging.AddDebug();
-#endif
 
             return builder.Build();
         }

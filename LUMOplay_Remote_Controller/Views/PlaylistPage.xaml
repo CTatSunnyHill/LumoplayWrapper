@@ -13,10 +13,18 @@
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="model:Playlist">
                     <Frame Margin="10" CornerRadius="10" BorderColor="LightGray" HasShadow="True">
-                        <VerticalStackLayout Padding="10">
-                            <Label Text="{Binding Name}" FontSize="Medium" FontAttributes="Bold"/>
-                            <Label Text="{Binding Games.Count, StringFormat='{0} games'}" />
-                        </VerticalStackLayout>
+                        <Grid ColumnDefinitions="*, Auto">
+                            <VerticalStackLayout Padding="10">
+                                <Label Text="{Binding Name}" FontSize="Medium" FontAttributes="Bold"/>
+                                <Label Text="{Binding Games.Count, StringFormat='{0} games'}" />
+                            </VerticalStackLayout>
+                            <Button Text="Launch"
+                                    Grid.Column="1"
+                                    VerticalOptions="Center"
+                                    Margin="10"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:PlaylistViewModel}}, Path=LaunchPlaylistCommand}"
+                                    CommandParameter="{Binding .}"/>
+                        </Grid>
                     </Frame>
                 </DataTemplate>
             </CollectionView.ItemTemplate>

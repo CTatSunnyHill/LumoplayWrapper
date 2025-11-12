@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodel="clr-namespace:LUMOplay_Remote_Controller.ViewModels"
+             xmlns:model="clr-namespace:LUMOplay_Remote_Controller.Model"
+             x:Class="LUMOplay_Remote_Controller.Views.PlaylistPage"
+             x:DataType="viewmodel:PlaylistViewModel"
+             Title="Playlists"
+             BackgroundColor="#F0F2F5">
+    <Grid RowDefinitions="Auto, *" Padding="44,0,44,44">
+        <Label Text="Playlists" FontSize="Large" FontAttributes="Bold" Margin="0,24,0,24"/>
+
+        <CollectionView Grid.Row="1" ItemsSource="{Binding Playlists}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="model:Playlist">
+                    <Frame Margin="10" CornerRadius="10" BorderColor="LightGray" HasShadow="True">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <VerticalStackLayout Padding="10">
+                                <Label Text="{Binding Name}" FontSize="Medium" FontAttributes="Bold"/>
+                                <Label Text="{Binding Games.Count, StringFormat='{0} games'}" />
+                            </VerticalStackLayout>
+                            <Button Text="Launch"
+                                    Grid.Column="1"
+                                    VerticalOptions="Center"
+                                    Margin="10"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:PlaylistViewModel}}, Path=LaunchPlaylistCommand}"
+                                    CommandParameter="{Binding .}"/>
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentPage>

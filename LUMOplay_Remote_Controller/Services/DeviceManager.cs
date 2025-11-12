@@ -78,7 +78,16 @@ namespace LUMOplay_Remote_Controller.Services
             return Devices.FirstOrDefault(d => d.IpAddress == deviceIPAddress);
         }
 
-        public async Task PlayGameAsync(string deviceIPAddress, LumoplayGame game)
+        public async Task PlayPlaylistAsync(LumoplayDevice device, Playlist playlist)
+        {
+            if (playlist == null || !playlist.Games.Any())
+                return;
+
+            var firstGame = playlist.Games.First();
+            await PlayGameAsync(device.IpAddress, firstGame, playlist);
+        }
+
+        public async Task PlayGameAsync(string deviceIPAddress, LumoplayGame game, Playlist playlist = null)
         {
             var device = GetDevice(deviceIPAddress);
             if (device == null) return;
@@ -89,6 +98,7 @@ namespace LUMOplay_Remote_Controller.Services
             {
                 device.CurrentGame = game;
                 device.IsPlaying = true;
+                device.Playlist = playlist;
             }
             else
             {
@@ -120,44 +130,33 @@ namespace LUMOplay_Remote_Controller.Services
             {
                 device.IsPlaying = false;
                 device.CurrentGame = null;
+                device.Playlist = null;
             }
         }
 
         public async Task NextGameAsync(string deviceIPAddress)
         {
             var device = GetDevice(deviceIPAddress);
-            if (device == null) return;
+            if (device?.Playlist == null || device.CurrentGame == null) return;
 
-            var service = new LumoplayService(device);
-            bool success = await service.NextContentAsync();
-            if (success)
+            int currentIndex = device.Playlist.Games.IndexOf(device.CurrentGame);
+            if (currentIndex >= 0 && currentIndex < device.Playlist.Games.Count - 1)
             {
-                // Optionally update CurrentGame from playlist
-                if (device.Playlist != null && device.CurrentGame != null)
-                {
-                    int idx = device.Playlist.IndexOf(device.CurrentGame);
-                    if (idx >= 0 && idx < device.Playlist.Count - 1)
-                        device.CurrentGame = device.Playlist[idx + 1];
-                }
+                var nextGame = device.Playlist.Games[currentIndex + 1];
+                await PlayGameAsync(deviceIPAddress, nextGame, device.Playlist);
             }
         }
 
         public async Task PreviousGameAsync(string deviceIPAddress)
         {
             var device = GetDevice(deviceIPAddress);
-            if (device == null) return;
+            if (device?.Playlist == null || device.CurrentGame == null) return;
 
-            var service = new LumoplayService(device);
-            bool success = await service.PreviousContentAsync();
-            if (success)
+            int currentIndex = device.Playlist.Games.IndexOf(device.CurrentGame);
+            if (currentIndex > 0)
             {
-                // Optionally update CurrentGame from playlist
-                if (device.Playlist != null && device.CurrentGame != null)
-                {
-                    int idx = device.Playlist.IndexOf(device.CurrentGame);
-                    if (idx > 0)
-                        device.CurrentGame = device.Playlist[idx - 1];
-                }
+                var previousGame = device.Playlist.Games[currentIndex - 1];
+                await PlayGameAsync(deviceIPAddress, previousGame, device.Playlist);
             }
         }
     }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 
@@ -20,6 +21,11 @@ namespace LUMOplay_Remote_Controller.Model
         /// Gets the collection of available LUMOplay games.
         /// </summary>
         public static ReadOnlyCollection<LumoplayGame> Games { get; }
+
+        /// <summary>
+        /// Gets the collection of available LUMOplay playlists.
+        /// </summary>
+        public static ReadOnlyCollection<Playlist> Playlists { get; }
 
         /// <summary>
         /// Static constructor to initialize the device and game collections.
@@ -169,6 +175,17 @@ namespace LUMOplay_Remote_Controller.Model
 
             Devices = new ReadOnlyCollection<LumoplayDevice>(devices);
             Games = new ReadOnlyCollection<LumoplayGame>(games);
+
+            // Initialize playlists
+            var playlists = new List<Playlist>
+            {
+                new Playlist
+                {
+                    Name = "TML",
+                    Games = games
+                },
+            };
+            Playlists = new ReadOnlyCollection<Playlist>(playlists);
         }
 
         /// <summary>

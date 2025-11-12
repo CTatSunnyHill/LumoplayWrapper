@@ -40,7 +40,7 @@ namespace LUMOplay_Remote_Controller.ViewModels
                 // like starting the first game in the playlist.
                 if (device.CurrentGame != null)
                 {
-                    await _deviceManager.PlayGameAsync(device.IpAddress, device.CurrentGame);
+                    await _deviceManager.PlayGameAsync(device.IpAddress, device.CurrentGame, device.Playlist);
                 }
             }
         }

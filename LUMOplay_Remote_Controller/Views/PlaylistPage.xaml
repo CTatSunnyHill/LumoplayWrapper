@@ -5,9 +5,10 @@
              xmlns:model="clr-namespace:LUMOplay_Remote_Controller.Model"
              x:Class="LUMOplay_Remote_Controller.Views.PlaylistPage"
              x:DataType="viewmodel:PlaylistViewModel"
-             Title="Playlists">
-    <Grid RowDefinitions="Auto, *">
-        <Label Text="Playlists" FontSize="Large" FontAttributes="Bold" Margin="10"/>
+             Title="Playlists"
+             BackgroundColor="#F0F2F5">
+    <Grid RowDefinitions="Auto, *" Padding="44,0,44,44">
+        <Label Text="Playlists" FontSize="Large" FontAttributes="Bold" Margin="0,24,0,24"/>
 
         <CollectionView Grid.Row="1" ItemsSource="{Binding Playlists}">
             <CollectionView.ItemTemplate>

@@ -5,7 +5,6 @@
              xmlns:converters="clr-namespace:LUMOplay_Remote_Controller.Converters"
              x:Class="LUMOplay_Remote_Controller.Views.DashboardPage"
              x:DataType="vm:DashboardViewModel"
-             Title="Dashboard"
              BackgroundColor="#F0F2F5">
     <ContentPage.Resources>
         <converters:BoolToColorConverter x:Key="BoolToColorConverter" />
@@ -25,17 +24,19 @@
         </Style>
     </ContentPage.Resources>
     <ScrollView>
-        <VerticalStackLayout Padding="24">
-            <Label Text="Now Playing" FontSize="20" Margin="0,16,0,8" TextColor="#4A4A4A" />
+        <VerticalStackLayout Padding="44,0,44,44">
+            <Label Text="Dashboard" FontSize="32" FontAttributes="Bold" Margin="0,24,0,24" TextColor="Black" />
+            
             <Frame Padding="24" CornerRadius="8" BorderColor="Transparent" BackgroundColor="White">
-               
-                <CollectionView ItemsSource="{Binding Devices}">
+
+                <CollectionView  BackgroundColor="White" ItemsSource="{Binding Devices}">
+                   
                     <CollectionView.ItemsLayout>
                         <GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="24" VerticalItemSpacing="24" />
                     </CollectionView.ItemsLayout>
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="model:LumoplayDevice">
-                            <Frame Padding="16" BorderColor="#E0E0E0" CornerRadius="8" HasShadow="False">
+                            <Frame Padding="16" BorderColor="#E0E0E0" CornerRadius="8" HasShadow="False" BackgroundColor="#F0F2F5">
                                 <Grid RowDefinitions="Auto, *, Auto">
                                     <!-- Header: Device Name and Status -->
                                     <Grid Grid.Row="0" ColumnDefinitions="*, Auto">

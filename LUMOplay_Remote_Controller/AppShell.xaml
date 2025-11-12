@@ -6,7 +6,9 @@
     xmlns:local="clr-namespace:LUMOplay_Remote_Controller"
     xmlns:views="clr-namespace:LUMOplay_Remote_Controller.Views"
     Title="LUMOplay_Remote_Controller"
-    FlyoutBehavior="Locked">
+    FlyoutBehavior="Locked"
+    Shell.BackgroundColor="#F0F2F5"
+    Shell.NavBarIsVisible="False">
 
     <FlyoutItem Title="Dashboard" Icon="library.png">
         <ShellContent

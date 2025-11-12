@@ -4,41 +4,52 @@
              xmlns:viewmodels="clr-namespace:LUMOplay_Remote_Controller.ViewModels"
              x:Class="LUMOplay_Remote_Controller.Views.GameLibraryPage"
              x:Name="GameLibraryPageRoot"
-             Title="Game Library">
+             Title="Game Library"
+             BackgroundColor="#F0F2F5">
 
  
 
     <ScrollView>
-        <VerticalStackLayout Padding="24,24,24,0" Spacing="16">
+        
+        <VerticalStackLayout Padding="24,0,24,0" Spacing="16" >
 
+            <Label Text="Game Library" FontSize="Large" FontAttributes="Bold" Margin="0,24,0,24"/>
 
             <!-- Game Grid -->
             <CollectionView ItemsSource="{Binding Games}"
                             SelectionMode="None">
                 <CollectionView.ItemsLayout>
-                    <GridItemsLayout Orientation="Vertical" Span="3" />
+                    <GridItemsLayout Orientation="Vertical" Span="4" VerticalItemSpacing="12" HorizontalItemSpacing="12"/>
                 </CollectionView.ItemsLayout>
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Frame Padding="12" Margin="8" HasShadow="True" CornerRadius="12" BackgroundColor="#F7F8FA">
-                            <VerticalStackLayout Spacing="8">
-                                <Image Source="{Binding ImageUrl}" HeightRequest="120" WidthRequest="180" Aspect="AspectFill" BackgroundColor="#E0E0E0" />
-                                <Label Text="{Binding Name}" FontAttributes="Bold" FontSize="18" TextColor="Black" />
-                                <Label Text="{Binding LocationType}" FontSize="14" TextColor="#666" />
-                                <Button Text="Launch"
-                                        Clicked="OnLaunchButtonClicked"
-                                        CommandParameter="{Binding .}"
-                                        BackgroundColor="#5B4EFF"
-                                        TextColor="White"
-                                        CornerRadius="8"
-                                        Padding="8,0"
-                                        FontSize="16">
-                                    <Button.ImageSource>
-                                        <FontImageSource Glyph="&#x25B6;" FontFamily="MaterialIcons" Color="White" Size="18"/>
-                                    </Button.ImageSource>
-                                </Button>
+                        <Border Padding="0" Stroke="#E0E0E0" StrokeThickness="1">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="12"/>
+                            </Border.StrokeShape>
+                            <VerticalStackLayout>
+                                <Image Source="{Binding ImageUrl}" HeightRequest="120" Aspect="AspectFill" BackgroundColor="#EAEAEA" />
+                                <VerticalStackLayout Padding="12" Spacing="8" BackgroundColor="White">
+                                    <Label Text="{Binding Name}" FontAttributes="Bold" FontSize="16" TextColor="Black" />
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <Label Grid.Column="0" Text="{Binding LocationType}" FontSize="14" TextColor="#666" VerticalOptions="Center" />
+                                        <Button Grid.Column="1" Text="Launch"
+                             Clicked="OnLaunchButtonClicked"
+                             CommandParameter="{Binding .}"
+                             BackgroundColor="#5B4EFF"
+                             TextColor="White"
+                             CornerRadius="8"
+                             Padding="12,8"
+                             FontSize="14"
+                             HorizontalOptions="End">
+                                            <Button.ImageSource>
+                                                <FontImageSource Glyph="&#x25B6;" FontFamily="MaterialIcons" Color="White" Size="14"/>
+                                            </Button.ImageSource>
+                                        </Button>
+                                    </Grid>
+                                </VerticalStackLayout>
                             </VerticalStackLayout>
-                        </Frame>
+                        </Border>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>

@@ -52,11 +52,12 @@
                                     <!-- Content: Game Info or No Game Active -->
                                     <Grid Grid.Row="1" Margin="0,16" ColumnDefinitions="Auto, *" ColumnSpacing="12">
                                         <!-- Active Game -->
-                                        <Grid IsVisible="{Binding CurrentGame}">
-                                            <Image Source="{Binding CurrentGame.ImageUrl}" HeightRequest="60" WidthRequest="60" Aspect="AspectFill" />
+
+                                        <Grid IsVisible="{Binding CurrentGame}" ColumnDefinitions="Auto, *" ColumnSpacing="24">
+                                            <Image Source="{Binding CurrentGame.ImageUrl}" HeightRequest="80" WidthRequest="80" Aspect="Fill"/>
                                             <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
                                                 <Label Text="{Binding CurrentGame.Name}" FontSize="16" FontAttributes="Bold" />
-                                                <Label Text="{Binding Id, StringFormat='Device: {0}'}" FontSize="12" TextColor="Gray" />
+                                                <Label Text="{Binding Playlist.Name}" FontSize="12" TextColor="Gray" />
                                             </VerticalStackLayout>
                                         </Grid>
                                         <!-- No Game Active -->

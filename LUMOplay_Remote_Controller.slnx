@@ -1,3 +1,6 @@
 <Solution>
-  <Project Path="LUMOplay_Remote_Controller/LUMOplay_Remote_Controller.csproj" />
+  <Project Path="IntTech_Controller_Backend/IntTech_Controller_Backend.csproj" Id="0ac482d4-3618-4839-962a-c6e8a0d70b96" />
+  <Project Path="LUMOplay_Remote_Controller/LUMOplay_Remote_Controller.csproj">
+    <Deploy Solution="Debug|*" />
+  </Project>
 </Solution>

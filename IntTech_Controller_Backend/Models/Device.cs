@@ -6,14 +6,14 @@ namespace IntTech_Controller_Backend.Models
     [Collection("devices")]
     public class Device
     {
-        public ObjectId id { get; set; }
-        public string name { get; set; }
-        public string ipAddress { get; set; }
-        public string securityKey { get; set; }
-        public LumoPlayGame? currentGame { get; set; }
-        public bool isConnected { get; set; }
-        public DateTime lastSeen { get; set; }
-        public bool isPlaying { get; set; }
+        public ObjectId Id { get; set; }
+        public string Name { get; set; }
+        public string IpAddress { get; set; }
+        public string SecurityKey { get; set; }
+        public LumoPlayGame? CurrentGame { get; set; }
+        public bool IsConnected { get; set; }
+        public DateTime LastSeen { get; set; }
+        public bool IsPlaying { get; set; }
         
 
     }

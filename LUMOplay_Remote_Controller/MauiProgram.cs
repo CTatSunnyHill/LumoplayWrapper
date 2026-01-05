@@ -25,7 +25,7 @@ namespace LUMOplay_Remote_Controller
 #if DEBUG
     		builder.Logging.AddDebug();
 #endif
-
+            builder.Services.AddSingleton<LumoPlayApiClient>();
             builder.Services.AddSingleton<DeviceManager>();
             builder.Services.AddSingleton<PlaylistManager>();
             builder.Services.AddSingleton<DashboardViewModel>();

@@ -11,7 +11,10 @@ namespace IntTech_Controller_Backend.Data
         public DbSet<LumoPlayGame> Games { get; set; }
         public DbSet<LumoPlayPlaylist> Playlists { get; set; }
 
-        public IntTechDBContext(DbContextOptions options) : base (options) { }
+        public IntTechDBContext(DbContextOptions options) : base (options) 
+        {
+            Database.AutoTransactionBehavior = AutoTransactionBehavior.Never;
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

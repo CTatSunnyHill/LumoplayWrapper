@@ -11,9 +11,22 @@ builder.Services.AddDbContext<IntTechDBContext>(options => options.UseMongoDB(mo
 // Add services to the container.
 
 builder.Services.AddSingleton<LumoCommandService>();
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new ObjectIdConverter());
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()   // Allows IP 192.168.x.x
+              .AllowAnyMethod()   // Allows GET, POST, DELETE, etc.
+              .AllowAnyHeader();
+    });
+});
 
 var app = builder.Build();
 
@@ -24,10 +37,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.UseCors("AllowAll");
+
+app.UseStaticFiles();
 
 app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+app.Run("Http://0.0.0.0:5221");

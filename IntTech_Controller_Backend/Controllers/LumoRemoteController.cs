@@ -395,36 +395,42 @@ namespace IntTech_Controller_Backend.Controllers
 
         // PUT: api/LumoRemote/lumoPlaylists/{playlistId}/update-order
         [HttpPut("lumoPlaylists/{playlistId}/update-order")]
-        public async Task<IActionResult> UpdatePlaylistOrder(string playlistId, [FromBody] List<string> newOrderGameIds)
+        public async Task<IActionResult> UpdatePlaylistGames(string playlistId, [FromBody] List<string> gameIds)
         {
             if (!ObjectId.TryParse(playlistId, out ObjectId oid))
-                return BadRequest("Invalid Playlist ID format.");   
+                return BadRequest("Invalid Playlist ID format.");
+
             var playlist = await _context.Playlists.FirstOrDefaultAsync(p => p.Id == oid);
             if (playlist == null) return NotFound($"Playlist with ID '{playlistId}' not found.");
 
-            var existingItemsMap = playlist.Games
-                .DistinctBy(g => g.GameId) // Ensure unique keys
-                .ToDictionary(g => g.GameId);
+            // 1. Fetch all game details from the library to ensure data integrity
+            // We use the incoming gameIds list to filter, but we need the names from the DB
+            var gamesFromDb = await _context.Games
+                .Where(g => gameIds.Contains(g.GameId))
+                .ToListAsync();
+            
+            var gameMap = gamesFromDb.ToDictionary(g => g.GameId);
 
+            // 2. Reconstruct the playlist items in the exact order of the incoming gameIds
             var newGameList = new List<LumoPlaylistGame>();
-
-            foreach (var gid in newOrderGameIds)
+            foreach (var gid in gameIds)
             {
-                // Only add the game if it existed in the original list 
-                // (or you can add a fallback DB fetch here if supporting bulk inserts)
-                if (existingItemsMap.TryGetValue(gid, out var existingGame))
+                if (gameMap.TryGetValue(gid, out var game))
                 {
-                    newGameList.Add(existingGame);
+                    newGameList.Add(new LumoPlaylistGame 
+                    { 
+                        GameId = game.GameId, 
+                        Name = game.Name 
+                    });
                 }
             }
 
+            // 3. Update and Save
             playlist.Games = newGameList;
-            
             await _context.SaveChangesAsync();
 
-            return Ok("Playlist order updated successfully.");
-
-        } 
+            return Ok(new { Message = "Playlist order updated successfully." });
+        }
 
 
         // ==========================================

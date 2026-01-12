@@ -393,6 +393,39 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok($"Removed game '{gameToRemove.Name}' from Playlist '{playlist.Name}'");
         }
 
+        // PUT: api/LumoRemote/lumoPlaylists/{playlistId}/update-order
+        [HttpPut("lumoPlaylists/{playlistId}/update-order")]
+        public async Task<IActionResult> UpdatePlaylistOrder(string playlistId, [FromBody] List<string> newOrderGameIds)
+        {
+            if (!ObjectId.TryParse(playlistId, out ObjectId oid))
+                return BadRequest("Invalid Playlist ID format.");   
+            var playlist = await _context.Playlists.FirstOrDefaultAsync(p => p.Id == oid);
+            if (playlist == null) return NotFound($"Playlist with ID '{playlistId}' not found.");
+
+            var existingItemsMap = playlist.Games
+                .DistinctBy(g => g.GameId) // Ensure unique keys
+                .ToDictionary(g => g.GameId);
+
+            var newGameList = new List<LumoPlaylistGame>();
+
+            foreach (var gid in newOrderGameIds)
+            {
+                // Only add the game if it existed in the original list 
+                // (or you can add a fallback DB fetch here if supporting bulk inserts)
+                if (existingItemsMap.TryGetValue(gid, out var existingGame))
+                {
+                    newGameList.Add(existingGame);
+                }
+            }
+
+            playlist.Games = newGameList;
+            
+            await _context.SaveChangesAsync();
+
+            return Ok("Playlist order updated successfully.");
+
+        } 
+
 
         // ==========================================
         // COMMAND ENDPOINTS

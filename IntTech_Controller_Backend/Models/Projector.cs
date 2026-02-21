@@ -25,6 +25,9 @@ namespace IntTech_Controller_Backend.Models
         [BsonElement("status")]
         public string Status { get; set; } = "unknown";
 
+        [BsonElement("location")]
+        public string Location { get; set; }
+
         [BsonElement("lastPolled")]
         public DateTime LastPolled { get; set; }
     }

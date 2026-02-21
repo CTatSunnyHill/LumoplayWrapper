@@ -28,7 +28,9 @@ namespace IntTech_Controller_Backend.Services
             if (response.Contains("=1")) return "on";
             if (response.Contains("=2")) return "cooling";
             if (response.Contains("=3")) return "warming";
+            if (response.Contains("=ERR3")) return "transitioning";
             if (response.Contains("ERR")) return "error";
+
 
             return "offline";
         }

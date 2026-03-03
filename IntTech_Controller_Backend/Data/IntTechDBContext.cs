@@ -10,6 +10,7 @@ namespace IntTech_Controller_Backend.Data
         public DbSet<Device> Devices { get; set; }
         public DbSet<LumoPlayGame> Games { get; set; }
         public DbSet<LumoPlayPlaylist> Playlists { get; set; }
+        public DbSet<Projector> Projectors { get; set; }
 
         public IntTechDBContext(DbContextOptions options) : base (options) 
         {
@@ -23,6 +24,7 @@ namespace IntTech_Controller_Backend.Data
             modelBuilder.Entity<Device>().ToCollection("devices");
             modelBuilder.Entity<LumoPlayGame>().ToCollection("lumoGames");
             modelBuilder.Entity<LumoPlayPlaylist>().ToCollection("lumoPlaylists");
+            modelBuilder.Entity<Projector>().ToCollection("projectors");
         }
 
     }

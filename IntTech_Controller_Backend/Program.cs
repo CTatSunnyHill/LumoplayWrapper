@@ -11,6 +11,7 @@ builder.Services.AddDbContext<IntTechDBContext>(options => options.UseMongoDB(mo
 // Add services to the container.
 
 builder.Services.AddSingleton<LumoCommandService>();
+builder.Services.AddSingleton<ProjectorCommandService>();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {

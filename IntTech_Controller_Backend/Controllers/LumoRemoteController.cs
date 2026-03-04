@@ -1,15 +1,18 @@
 ﻿using IntTech_Controller_Backend.Data;
 using IntTech_Controller_Backend.Models;
 using IntTech_Controller_Backend.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MongoDB.Bson;
 using System.Diagnostics;
+using System.Security.Claims;
 
 namespace IntTech_Controller_Backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class LumoRemoteController : ControllerBase
     {
         private readonly IntTechDBContext _context;
@@ -29,8 +32,18 @@ namespace IntTech_Controller_Backend.Controllers
         [HttpGet("devices")]
         public async Task<IActionResult> GetDevices()
         {
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
+            var locationsClaim = User.FindFirstValue("AllowedLocations");
+            var allowedLocations = string.IsNullOrEmpty(locationsClaim) ? new List<string>() : System.Text.Json.JsonSerializer.Deserialize<List<string>>(locationsClaim);
+
+            var query = _context.Devices.AsQueryable();
+            if (userRole.ToLower() != "Admin")
+            {
+                query = query.Where(d => allowedLocations.Contains(d.Location));
+            }
+
             // 1. Get all devices from DB
-            var devices = await _context.Devices.ToListAsync();
+            var devices = await query.ToListAsync();
             var allGames = await _context.Games.ToDictionaryAsync(g => g.GameId);
 
             // 2. Create a list of checking tasks (Launch them all in parallel)
@@ -158,6 +171,7 @@ namespace IntTech_Controller_Backend.Controllers
 
         // POST: api/LumoRemote/devices
         [HttpPost("devices")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AddDevice([FromBody] Device device)
         {
             if (string.IsNullOrWhiteSpace(device.IpAddress))
@@ -186,6 +200,7 @@ namespace IntTech_Controller_Backend.Controllers
 
         // DELETE: api/LumoRemote/devices
         [HttpDelete("devices")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> RemoveDevice([FromQuery] string ipAddress)
         {
             if (string.IsNullOrWhiteSpace(ipAddress))
@@ -235,6 +250,7 @@ namespace IntTech_Controller_Backend.Controllers
 
         // POST: api/LumoRemote/lumoGames
         [HttpPost("lumoGames")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AddGame([FromBody] LumoPlayGame game)
         {
             if (string.IsNullOrWhiteSpace(game.GameId))
@@ -257,6 +273,7 @@ namespace IntTech_Controller_Backend.Controllers
 
         // DELETE: api/LumoRemote/lumoGames/{gameId}
         [HttpDelete("lumoGames/{gameId}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> RemoveGame(string gameId)
         {
             var game = await _context.Games

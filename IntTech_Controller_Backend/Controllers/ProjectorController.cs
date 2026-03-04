@@ -1,14 +1,18 @@
 ﻿using IntTech_Controller_Backend.Data;
 using IntTech_Controller_Backend.Models;
 using IntTech_Controller_Backend.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MongoDB.Bson;
+using System.Security.Claims;
+using System.Text.Json;
 
 namespace IntTech_Controller_Backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class ProjectorController : ControllerBase
     {
         private readonly IntTechDBContext _dbContext;
@@ -24,7 +28,19 @@ namespace IntTech_Controller_Backend.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllProjectors()
         {
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
+            var locationsClaim = User.FindFirstValue("AllowedLocations");
+            var allowedLocations = string.IsNullOrEmpty(locationsClaim) ? new List<string>() : JsonSerializer.Deserialize<List<string>>(locationsClaim);
+
+            var query = _dbContext.Projectors.AsQueryable();
+
+            if (userRole.ToLower() != "Admin")
+            {
+                query = query.Where(p => allowedLocations.Contains(p.Location));
+            }
+
             var projectors = await _dbContext.Projectors.ToListAsync();
+
 
             var tasks = projectors.Select(async projector =>
             {
@@ -60,6 +76,7 @@ namespace IntTech_Controller_Backend.Controllers
 
         // POST: api/projectors
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AddProjector([FromBody] Projector projector)
         {
             projector.Id = ObjectId.GenerateNewId();
@@ -74,6 +91,8 @@ namespace IntTech_Controller_Backend.Controllers
 
         // DELETE: api/projectors/{id}
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+
         public async Task<IActionResult> DeleteProjector(string id)
         {
             if (!ObjectId.TryParse(id, out ObjectId oid))

@@ -34,12 +34,12 @@ namespace IntTech_Controller_Backend.Controllers
 
             var query = _dbContext.Projectors.AsQueryable();
 
-            if (userRole.ToLower() != "Admin")
+            if (userRole.ToLower() != "admin")
             {
                 query = query.Where(p => allowedLocations.Contains(p.Location));
             }
 
-            var projectors = await _dbContext.Projectors.ToListAsync();
+            var projectors = await query.ToListAsync();
 
 
             var tasks = projectors.Select(async projector =>

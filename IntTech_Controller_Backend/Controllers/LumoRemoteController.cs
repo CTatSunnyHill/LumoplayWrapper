@@ -37,7 +37,7 @@ namespace IntTech_Controller_Backend.Controllers
             var allowedLocations = string.IsNullOrEmpty(locationsClaim) ? new List<string>() : System.Text.Json.JsonSerializer.Deserialize<List<string>>(locationsClaim);
 
             var query = _context.Devices.AsQueryable();
-            if (userRole.ToLower() != "Admin")
+            if (userRole.ToLower() != "admin")
             {
                 query = query.Where(d => allowedLocations.Contains(d.Location));
             }

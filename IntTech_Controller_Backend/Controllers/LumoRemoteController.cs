@@ -32,12 +32,12 @@ namespace IntTech_Controller_Backend.Controllers
         [HttpGet("devices")]
         public async Task<IActionResult> GetDevices()
         {
-            var userRole = User.FindFirstValue(ClaimTypes.Role);
+            var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "";
             var locationsClaim = User.FindFirstValue("AllowedLocations");
-            var allowedLocations = string.IsNullOrEmpty(locationsClaim) ? new List<string>() : System.Text.Json.JsonSerializer.Deserialize<List<string>>(locationsClaim);
+            var allowedLocations = string.IsNullOrEmpty(locationsClaim) ? new List<string>() : System.Text.Json.JsonSerializer.Deserialize<List<string>>(locationsClaim) ?? new List<string>();
 
             var query = _context.Devices.AsQueryable();
-            if (userRole.ToLower() != "admin")
+            if (userRole != "Admin")
             {
                 query = query.Where(d => allowedLocations.Contains(d.Location));
             }

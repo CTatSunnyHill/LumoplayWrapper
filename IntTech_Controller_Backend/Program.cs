@@ -14,7 +14,7 @@ builder.Services.AddDbContext<IntTechDBContext>(options => options.UseMongoDB(mo
 
 // --- JWT Authentication Setup --- 
 
-var jwt = builder.Configuration["Jwt: Key"] ?? "SuperSecretKeyForIntTechHospitalAppThatIsLongEnough";
+var jwt = builder.Configuration["Jwt:Key"] ?? "SuperSecretKeyForIntTechHospitalAppThatIsLongEnough";
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options => {
     options.TokenValidationParameters = new TokenValidationParameters { 
         ValidateIssuer = false,
@@ -78,6 +78,7 @@ app.UseCors("AllowAll");
 
 app.UseStaticFiles();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

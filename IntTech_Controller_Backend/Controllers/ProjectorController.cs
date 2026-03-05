@@ -28,9 +28,9 @@ namespace IntTech_Controller_Backend.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllProjectors()
         {
-            var userRole = User.FindFirstValue(ClaimTypes.Role);
+            var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "";
             var locationsClaim = User.FindFirstValue("AllowedLocations");
-            var allowedLocations = string.IsNullOrEmpty(locationsClaim) ? new List<string>() : JsonSerializer.Deserialize<List<string>>(locationsClaim);
+            var allowedLocations = string.IsNullOrEmpty(locationsClaim) ? new List<string>() : JsonSerializer.Deserialize<List<string>>(locationsClaim) ?? new List<string>();
 
             var query = _dbContext.Projectors.AsQueryable();
 

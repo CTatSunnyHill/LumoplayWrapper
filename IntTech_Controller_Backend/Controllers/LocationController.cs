@@ -45,11 +45,11 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(newLocation);
         }
 
-        [HttpPut]
+        [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateLocation(string id, [FromBody] LocationDto dto)
         {
-            if (ObjectId.TryParse(id, out ObjectId oid)) return BadRequest("Invalid ID format");
+            if (!ObjectId.TryParse(id, out ObjectId oid)) return BadRequest("Invalid ID format");
 
             var location  = await _context.Locations.FirstOrDefaultAsync(l => l.Id == oid);
             if (location == null) return NotFound(new { Message = "Location not found"});
@@ -63,11 +63,11 @@ namespace IntTech_Controller_Backend.Controllers
         }
 
 
-        [HttpDelete]
+        [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteLocation(string id)
         {
-            if (ObjectId.TryParse(id, out ObjectId oid)) return BadRequest("Invalid ID format");
+            if (!ObjectId.TryParse(id, out ObjectId oid)) return BadRequest("Invalid ID format");
 
             var location = await _context.Locations.FirstOrDefaultAsync(l => l.Id == oid);
             if (location == null) return NotFound(new { Message = "Location not found" });

@@ -26,8 +26,23 @@ namespace IntTech_Controller_Backend.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request) 
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == request.Username.ToLower());
-            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password,user.PasswordHash)) 
+            if (request == null)
+            {
+                return BadRequest(new { message = "Invalid request body" });
+            }
+
+            var username = request.Username?.Trim();
+            var password = request.Password?.Trim();
+
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            {
+                return BadRequest(new { message = "Username and password are required" });
+            }
+
+            var normalizedUsername = username.ToLower();
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == normalizedUsername);
+            if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash)) 
             {
                 return Unauthorized(new { message = "Invalid username or password" });
             }

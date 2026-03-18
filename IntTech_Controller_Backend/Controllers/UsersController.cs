@@ -46,11 +46,37 @@ namespace IntTech_Controller_Backend.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto)
         {
-            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == dto.Username.ToLower());
+            if (dto == null)
+            {
+                return BadRequest(new { Message = "Request body is required" });
+            }
+
+            var username = dto.Username?.Trim();
+            var password = dto.Password?.Trim();
+            var role = dto.Role?.Trim();
+
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                return BadRequest(new { Message = "Username is required" });
+            }
+
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                return BadRequest(new { Message = "Password is required" });
+            }
+
+            if (string.IsNullOrWhiteSpace(role))
+            {
+                return BadRequest(new { Message = "Role is required" });
+            }
+
+            var usernameLower = username.ToLowerInvariant();
+            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == usernameLower);
             if (existingUser != null)
             {
-                return BadRequest(new { Message = "Username already exists"});
+                return BadRequest(new { Message = "Username already exists" });
             }
+
             var locationIds = new List<ObjectId>();
 
             if (dto.AllowedLocationsIds != null) 
@@ -64,13 +90,12 @@ namespace IntTech_Controller_Backend.Controllers
                 }
             }
 
-
             var newUser = new User
             {
                 Id = ObjectId.GenerateNewId(),
-                Username = dto.Username,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-                Role = dto.Role,
+                Username = username,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+                Role = role,
                 AllowedLocationsIds = locationIds,
             };
 

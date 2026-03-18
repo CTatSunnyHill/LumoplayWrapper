@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using IntTech_Controller_Backend.Models;
+using MongoDB.Bson;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -60,7 +61,7 @@ using (var scope = app.Services.CreateScope())
             Username = "admin",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin"), // Default password, should be changed after first login
             Role = "Admin",
-            AllowedLocations = new List<string> { }
+            AllowedLocationsIds = new List<ObjectId> { }
         });
         db.SaveChanges();
         Console.WriteLine("Seeded default admin user: admin / admin");

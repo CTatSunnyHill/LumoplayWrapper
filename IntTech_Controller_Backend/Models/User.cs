@@ -20,8 +20,8 @@ namespace IntTech_Controller_Backend.Models
         [BsonElement("role")]
         public string Role { get; set; }
 
-        [BsonElement("allowedLocations")]
-        public List<string> AllowedLocations { get; set; } = new();
+        [BsonElement("allowedLocationsIds")]
+        public List<ObjectId> AllowedLocationsIds { get; set; } = new();
 
     }
 

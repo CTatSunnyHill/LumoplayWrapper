@@ -31,12 +31,14 @@ namespace IntTech_Controller_Backend.Controllers
             {
                 return Unauthorized(new { message = "Invalid username or password" });
             }
+
+            var locationIds = user.AllowedLocationsIds.Select(id => id.ToString()).ToList();
             var claims = new List<Claim> 
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Role, user.Role),
-                new Claim("AllowedLocations", JsonSerializer.Serialize(user.AllowedLocations))
+                new Claim("AllowedLocationsIds", JsonSerializer.Serialize(locationIds))
             };
 
             var jwtKey = _config["Jwt:Key"] ?? "SuperSecretKeyForIntTechHospitalAppThatIsLongEnough";

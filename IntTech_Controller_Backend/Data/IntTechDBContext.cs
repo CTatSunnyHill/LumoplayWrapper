@@ -13,6 +13,8 @@ namespace IntTech_Controller_Backend.Data
         public DbSet<Projector> Projectors { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Location> Locations { get; set; }
+        public DbSet<Category> Categories{ get; set; }
+        public DbSet<Tag> Tags { get; set; }
 
 
         public IntTechDBContext(DbContextOptions options) : base (options) 
@@ -30,6 +32,8 @@ namespace IntTech_Controller_Backend.Data
             modelBuilder.Entity<Projector>().ToCollection("projectors");
             modelBuilder.Entity<User>().ToCollection("users");
             modelBuilder.Entity<Location>().ToCollection("locations");
+            modelBuilder.Entity<Category>().ToCollection("categories");
+            modelBuilder.Entity<Tag>().ToCollection("tags");
         }
 
     }

@@ -19,5 +19,8 @@ namespace IntTech_Controller_Backend.Models
         public string? Description { get; set; }
         [BsonElement("locationType")]
         public List<string> LocationType { get; set; }
+
+        [BsonElement]
+        public List<ObjectId>? TagIds { get; set; }
     }
 }

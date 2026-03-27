@@ -25,8 +25,8 @@ namespace IntTech_Controller_Backend.Models
         public string SecurityKey { get; set; }
 
 
-        [BsonElement("location")]
-        public string Location { get; set; }
+        [BsonElement("locationId")]
+        public ObjectId LocationId { get; set; }
 
 
 

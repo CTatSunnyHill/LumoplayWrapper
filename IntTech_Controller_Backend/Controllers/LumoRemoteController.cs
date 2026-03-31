@@ -272,8 +272,7 @@ namespace IntTech_Controller_Backend.Controllers
                     game.Name,
                     game.ImageFileName,
                     game.Description,
-                    game.LocationType,   // Legacy — kept for backward compat
-                    Tags = resolvedTags  // New — resolved tag objects
+                    Tags = resolvedTags
                 };
             });
 

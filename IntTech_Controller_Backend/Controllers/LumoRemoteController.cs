@@ -242,7 +242,7 @@ namespace IntTech_Controller_Backend.Controllers
             var response = lumoGames.Select(game =>
             {
                 // Resolve tagIds to structured tag info
-                var resolvedTags = game.TagIds
+                var resolvedTags = (game.TagIds ?? new List<ObjectId>())
                     .Where(id => tagLookup.ContainsKey(id))
                     .Select(id =>
                     {

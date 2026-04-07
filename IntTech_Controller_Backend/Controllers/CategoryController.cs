@@ -76,7 +76,7 @@ namespace IntTech_Controller_Backend.Controllers
         }
 
         // PUT: api/Category/{id}
-        [HttpPost("{id}")]
+        [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateCategory(string id, [FromBody] UpdateCategoryDto dto)
         {

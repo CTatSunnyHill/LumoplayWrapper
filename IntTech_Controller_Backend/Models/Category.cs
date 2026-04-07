@@ -4,20 +4,28 @@ using MongoDB.EntityFrameworkCore;
 
 namespace IntTech_Controller_Backend.Models
 {
-    [Collection("lumoGames")]
-    public class LumoPlayGame
+    [Collection("categories")]
+    public class Category
     {
         [BsonId]
         public ObjectId Id { get; set; }
-        [BsonElement("gameId")]
-        public string GameId { get; set; }
+
         [BsonElement("name")]
         public string Name { get; set; }
-        [BsonElement("imageFileName")]
-        public string? ImageFileName { get; set; }
+
+        [BsonElement("slug")]
+        public string Slug { get; set; }
+
         [BsonElement("description")]
         public string? Description { get; set; }
-        [BsonElement("tagIds")]
-        public List<ObjectId>? TagIds { get; set; }
+
+        [BsonElement("displayOrder")]
+        public int DisplayOrder { get; set; }
+
+        [BsonElement("createdAt")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
     }
+
+
 }

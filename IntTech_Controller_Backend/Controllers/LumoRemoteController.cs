@@ -233,7 +233,50 @@ namespace IntTech_Controller_Backend.Controllers
         public async Task<IActionResult> GetLumoGames()
         {
             var lumoGames = await _context.Games.ToListAsync();
-            return Ok(lumoGames);
+            var allTags = await _context.Tags.ToListAsync();
+            var allCategories = await _context.Categories.ToListAsync();
+
+            var tagLookup = allTags.ToDictionary(t => t.Id);
+            var categoryLookup = allCategories.ToDictionary(c => c.Id);
+
+            var response = lumoGames.Select(game =>
+            {
+                // Resolve tagIds to structured tag info
+                var resolvedTags = (game.TagIds ?? new List<ObjectId>())
+                    .Where(id => tagLookup.ContainsKey(id))
+                    .Select(id =>
+                    {
+                        var tag = tagLookup[id];
+                        var cat = categoryLookup.ContainsKey(tag.CategoryId)
+                            ? categoryLookup[tag.CategoryId]
+                            : null;
+
+                        return new
+                        {
+                            Id = tag.Id.ToString(),
+                            tag.Name,
+                            tag.Slug,
+                            tag.ColorHex,
+                            CategoryId = tag.CategoryId.ToString(),
+                            CategoryName = cat?.Name ?? "Unknown",
+                            CategorySlug = cat?.Slug ?? "unknown",
+                            ParentTagId = tag.ParentTagId?.ToString()
+                        };
+                    })
+                    .ToList();
+
+                return new
+                {
+                    Id = game.Id.ToString(),
+                    game.GameId,
+                    game.Name,
+                    game.ImageFileName,
+                    game.Description,
+                    Tags = resolvedTags
+                };
+            });
+
+            return Ok(response);
         }
 
         // GET: api/LumoRemote/lumoGames/{gameId}
@@ -292,6 +335,103 @@ namespace IntTech_Controller_Backend.Controllers
 
             return Ok($"Game '{game.Name}' was removed from the library.");
         }
+
+        // POST: api/LumoRemote/lumoGames/{gameId}/tags
+        // Replaces ALL tag assignments for a game in one call.
+        [HttpPost("lumoGames/{gameId}/tags")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> SetGameTags(string gameId, [FromBody] SetGameTagsToDto dto)
+        {
+            if (dto == null) return BadRequest("Request body is required.");
+
+            var game = await _context.Games.FirstOrDefaultAsync(g => g.GameId == gameId);
+            if (game == null) return NotFound($"Game with ID '{gameId}' not found.");
+
+            var validTagIds = new List<ObjectId>();
+            var allTags = await _context.Tags.ToDictionaryAsync(t => t.Id);
+
+            foreach (var idStr in dto.TagIds)
+            {
+                if (!ObjectId.TryParse(idStr, out ObjectId tagOid))
+                    return BadRequest($"Invalid tag ID format: '{idStr}'");
+
+                if (!allTags.ContainsKey(tagOid))
+                    return NotFound($"Tag not found: '{idStr}'");
+
+                if (!validTagIds.Contains(tagOid))
+                    validTagIds.Add(tagOid);
+            }
+
+            game.TagIds = validTagIds;
+            await _context.SaveChangesAsync();
+
+            // Return the resolved tag info for immediate UI use
+            var resolvedTags = validTagIds
+                .Where(id => allTags.ContainsKey(id))
+                .Select(id => new
+                {
+                    Id = id.ToString(),
+                    allTags[id].Name,
+                    allTags[id].Slug,
+                    CategoryId = allTags[id].CategoryId.ToString(),
+                    allTags[id].ColorHex
+                })
+                .ToList();
+
+            return Ok(new
+            {
+                Message = $"Updated tags for game '{game.Name}'",
+                TagCount = validTagIds.Count,
+                Tags = resolvedTags
+            });
+
+        }
+
+        // GET: api/LumoRemote/lumoGames/{gameId}/tags
+        // Returns resolved tag details for a single game.
+        [HttpGet("lumoGames/{gameId}/tags")]
+        public async Task<IActionResult> GetGameTags(string gameId)
+        {
+            var game = await _context.Games.FirstOrDefaultAsync(g => g.GameId == gameId);
+            if (game == null)
+                return NotFound($"Game with ID '{gameId}' not found.");
+
+            var allTags = await _context.Tags.ToListAsync();
+            var allCategories = await _context.Categories.ToListAsync();
+
+            var tagLookup = allTags.ToDictionary(t => t.Id);
+            var categoryLookup = allCategories.ToDictionary(c => c.Id);
+
+            // Resolve each tagId to its full info, grouped by category
+            var tagsByCategory = (game.TagIds ?? Enumerable.Empty<ObjectId>())
+                .Where(id => tagLookup.ContainsKey(id))
+                .Select(id => tagLookup[id])
+                .GroupBy(t => t.CategoryId)
+                .Select(group =>
+                {
+                    var category = categoryLookup.ContainsKey(group.Key)
+                        ? categoryLookup[group.Key]
+                        : null;
+
+                    return new
+                    {
+                        CategoryId = group.Key.ToString(),
+                        CategoryName = category?.Name ?? "Unknown",
+                        Tags = group.Select(t => new
+                        {
+                            Id = t.Id.ToString(),
+                            t.Name,
+                            t.Slug,
+                            t.ColorHex,
+                            ParentTagId = t.ParentTagId?.ToString()
+                        }).ToList()
+                    };
+                })
+                .ToList();
+
+            return Ok(tagsByCategory);
+        }
+
 
 
         // ==========================================

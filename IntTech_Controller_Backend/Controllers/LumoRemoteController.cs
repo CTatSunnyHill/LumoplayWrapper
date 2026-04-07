@@ -342,6 +342,8 @@ namespace IntTech_Controller_Backend.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> SetGameTags(string gameId, [FromBody] SetGameTagsDto dto)
         {
+            if (dto == null) return BadRequest("Request body is required.");
+
             var game = await _context.Games.FirstOrDefaultAsync(g => g.GameId == gameId);
             if (game == null) return NotFound($"Game with ID '{gameId}' not found.");
 
@@ -401,7 +403,7 @@ namespace IntTech_Controller_Backend.Controllers
             var categoryLookup = allCategories.ToDictionary(c => c.Id);
 
             // Resolve each tagId to its full info, grouped by category
-            var tagsByCategory = game.TagIds
+            var tagsByCategory = (game.TagIds ?? Enumerable.Empty<ObjectId>())
                 .Where(id => tagLookup.ContainsKey(id))
                 .Select(id => tagLookup[id])
                 .GroupBy(t => t.CategoryId)

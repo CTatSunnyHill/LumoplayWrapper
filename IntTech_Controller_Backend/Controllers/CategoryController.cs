@@ -50,7 +50,7 @@ namespace IntTech_Controller_Backend.Controllers
             var trimmedName = dto.Name.Trim();
             var slug = GenerateSlug(trimmedName);
 
-            var exists = await _context.Categories.AnyAsync(c => c.Name.ToLower() == dto.Name.ToLower());
+            var exists = await _context.Categories.AnyAsync(c => c.Name.ToLower() == trimmedName.ToLower());
             if (exists) return BadRequest(new { Message = "A category with this name already exists" });
 
             int displayOrder = dto.DisplayOrder ?? 0;

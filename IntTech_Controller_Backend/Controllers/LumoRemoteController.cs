@@ -340,7 +340,7 @@ namespace IntTech_Controller_Backend.Controllers
         // Replaces ALL tag assignments for a game in one call.
         [HttpPost("lumoGames/{gameId}/tags")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> SetGameTags(string gameId, [FromBody] SetGameTagsDto dto)
+        public async Task<IActionResult> SetGameTags(string gameId, [FromBody] SetGameTagsToDto dto)
         {
             if (dto == null) return BadRequest("Request body is required.");
 

@@ -277,8 +277,7 @@ namespace IntTech_Controller_Backend.Controllers
                 return BadRequest(new { Message = "Cannot delete this tag because it has child tags. Remove them first." });
 
             // Block deletion if any games reference this tag via tagIds
-            var allGames = await _context.Games.ToListAsync();
-            bool inUseByGame = allGames.Any(g => g.TagIds != null && g.TagIds.Contains(oid));
+            bool inUseByGame = await _context.Games.AnyAsync(g => g.TagIds != null && g.TagIds.Contains(oid));
 
             if (inUseByGame)
                 return BadRequest(new { Message = "Cannot delete this tag because it is assigned to one or more games. Unassign it first." });

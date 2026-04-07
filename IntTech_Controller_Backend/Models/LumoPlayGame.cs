@@ -17,7 +17,7 @@ namespace IntTech_Controller_Backend.Models
         public string? ImageFileName { get; set; }
         [BsonElement("description")]
         public string? Description { get; set; }
-        [BsonElement]
+        [BsonElement("tagIds")]
         public List<ObjectId>? TagIds { get; set; }
     }
 }

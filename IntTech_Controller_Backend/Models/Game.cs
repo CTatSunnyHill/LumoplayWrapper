@@ -24,5 +24,27 @@ namespace IntTech_Controller_Backend.Models
 
         [BsonElement("tagIds")]
         public List<ObjectId>? TagIds { get; set; }
+
+        [BsonElement("platform")]
+        public string Platform { get; set; } = "lumoplay";
+    }
+
+
+    public static class PlatformTypes
+    {
+        public const string LumoPlay = "lumoplay";
+        public const string VR = "vr";
+        public const string NintendoSwitch = "switch";
+
+        public static readonly HashSet<string> All = new()
+        {
+            LumoPlay, VR, NintendoSwitch
+        };
+
+        public static bool IsValid(string platform)
+        {
+            return All.Contains(platform);
+        }
+        
     }
 }

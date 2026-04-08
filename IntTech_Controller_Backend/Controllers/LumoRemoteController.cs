@@ -230,9 +230,20 @@ namespace IntTech_Controller_Backend.Controllers
 
         // GET: api/LumoRemote/games
         [HttpGet("games")]
-        public async Task<IActionResult> GetGames()
+        public async Task<IActionResult> GetGames([FromQuery] string? platform)
         {
-            var games = await _context.Games.ToListAsync();
+            if (platform != null && !PlatformTypes.IsValid(platform))
+            {
+                return BadRequest(new { Message = $"Invalid platform: '{platform}'. Valid values: {string.Join(",", PlatformTypes.All)}" });
+            }
+
+            var query = _context.Games.AsQueryable();
+            var games = await query.ToListAsync();
+            
+            if (platform != null)
+            {
+                games = games.Where(g => (g.Platform ?? "lumoplay") == platform).ToList();
+            }
             var allTags = await _context.Tags.ToListAsync();
             var allCategories = await _context.Categories.ToListAsync();
 
@@ -272,6 +283,7 @@ namespace IntTech_Controller_Backend.Controllers
                     game.Name,
                     game.ImageFileName,
                     game.Description,
+                    game.Platform,
                     Tags = resolvedTags
                 };
             });
@@ -297,24 +309,60 @@ namespace IntTech_Controller_Backend.Controllers
         // POST: api/LumoRemote/games
         [HttpPost("games")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> AddGame([FromBody] Game game)
+        public async Task<IActionResult> AddGame([FromBody] CreateGameDto dto)
         {
-            if (string.IsNullOrWhiteSpace(game.GameId))
-                return BadRequest("Game ID is required.");
+            if (string.IsNullOrWhiteSpace(dto.Name))
+                return BadRequest(new { Message = "Name is required." });
 
-            var existingGame = await _context.Games
-                .FirstOrDefaultAsync(g => g.GameId == game.GameId);
+            // Validate platform
+            var platform = dto.Platform ?? "lumoplay";
+            if (!PlatformTypes.IsValid(platform))
+                return BadRequest(new { Message = $"Invalid platform: '{platform}'." });
 
-            if (existingGame != null)
+            // For lumoplay, GameId is required (used for device commands)
+            // For vr/switch, auto-generate if not provided
+            string gameId;
+            if (platform == PlatformTypes.LumoPlay)
             {
-                return Conflict($"A game with ID {game.GameId} already exists.");
+                if (string.IsNullOrWhiteSpace(dto.GameId))
+                    return BadRequest(new { Message = "GameId is required for LUMOplay games." });
+                gameId = dto.GameId.Trim();
+            }
+            else
+            {
+                gameId = !string.IsNullOrWhiteSpace(dto.GameId)
+                    ? dto.GameId.Trim()
+                    : $"{platform}-{ObjectId.GenerateNewId()}";
             }
 
-            game.Id = ObjectId.GenerateNewId();
+            // Check for duplicate GameId
+            var existing = await _context.Games.FirstOrDefaultAsync(g => g.GameId == gameId);
+            if (existing != null)
+                return Conflict(new { Message = $"A game with ID '{gameId}' already exists." });
+
+            var game = new Game
+            {
+                Id = ObjectId.GenerateNewId(),
+                GameId = gameId,
+                Name = dto.Name.Trim(),
+                Description = dto.Description?.Trim(),
+                ImageFileName = dto.ImageFileName?.Trim(),
+                Platform = platform,
+                TagIds = new List<ObjectId>()
+            };
+
             _context.Games.Add(game);
             await _context.SaveChangesAsync();
 
-            return Ok(game);
+            return Ok(new
+            {
+                Id = game.Id.ToString(),
+                game.GameId,
+                game.Name,
+                game.Description,
+                game.ImageFileName,
+                game.Platform
+            });
         }
 
         // DELETE: api/LumoRemote/games/{gameId}

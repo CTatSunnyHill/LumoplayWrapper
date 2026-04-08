@@ -4,8 +4,8 @@ using MongoDB.EntityFrameworkCore;
 
 namespace IntTech_Controller_Backend.Models
 {
-    [Collection("lumoPlaylists")]    
-    public class LumoPlayPlaylist
+    [Collection("playlists")]    
+    public class Playlist
     {
         [BsonId]
         public ObjectId Id { get; set; }
@@ -14,11 +14,11 @@ namespace IntTech_Controller_Backend.Models
         public string Name { get; set; }
 
         [BsonElement("games")]
-        public List<LumoPlaylistGame> Games { get; set; }
+        public List<PlaylistGame> Games { get; set; }
 
     }
 
-    public class LumoPlaylistGame 
+    public class PlaylistGame 
     {
         [BsonElement("gameId")]
         public string GameId { get; set; }

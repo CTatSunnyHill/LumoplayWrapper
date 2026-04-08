@@ -228,18 +228,18 @@ namespace IntTech_Controller_Backend.Controllers
         // GAME ENDPOINTS
         // ==========================================
 
-        // GET: api/LumoRemote/lumoGames
-        [HttpGet("lumoGames")]
-        public async Task<IActionResult> GetLumoGames()
+        // GET: api/LumoRemote/games
+        [HttpGet("games")]
+        public async Task<IActionResult> GetGames()
         {
-            var lumoGames = await _context.Games.ToListAsync();
+            var games = await _context.Games.ToListAsync();
             var allTags = await _context.Tags.ToListAsync();
             var allCategories = await _context.Categories.ToListAsync();
 
             var tagLookup = allTags.ToDictionary(t => t.Id);
             var categoryLookup = allCategories.ToDictionary(c => c.Id);
 
-            var response = lumoGames.Select(game =>
+            var response = games.Select(game =>
             {
                 // Resolve tagIds to structured tag info
                 var resolvedTags = (game.TagIds ?? new List<ObjectId>())
@@ -279,8 +279,8 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(response);
         }
 
-        // GET: api/LumoRemote/lumoGames/{gameId}
-        [HttpGet("lumoGames/{gameId}")]
+        // GET: api/LumoRemote/games/{gameId}
+        [HttpGet("games/{gameId}")]
         public async Task<IActionResult> GetGameById(string gameId)
         {
             var game = await _context.Games
@@ -294,10 +294,10 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(game);
         }
 
-        // POST: api/LumoRemote/lumoGames
-        [HttpPost("lumoGames")]
+        // POST: api/LumoRemote/games
+        [HttpPost("games")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> AddGame([FromBody] LumoPlayGame game)
+        public async Task<IActionResult> AddGame([FromBody] Game game)
         {
             if (string.IsNullOrWhiteSpace(game.GameId))
                 return BadRequest("Game ID is required.");
@@ -317,8 +317,8 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(game);
         }
 
-        // DELETE: api/LumoRemote/lumoGames/{gameId}
-        [HttpDelete("lumoGames/{gameId}")]
+        // DELETE: api/LumoRemote/games/{gameId}
+        [HttpDelete("games/{gameId}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> RemoveGame(string gameId)
         {
@@ -336,9 +336,9 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok($"Game '{game.Name}' was removed from the library.");
         }
 
-        // POST: api/LumoRemote/lumoGames/{gameId}/tags
+        // POST: api/LumoRemote/games/{gameId}/tags
         // Replaces ALL tag assignments for a game in one call.
-        [HttpPost("lumoGames/{gameId}/tags")]
+        [HttpPost("games/{gameId}/tags")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> SetGameTags(string gameId, [FromBody] SetGameTagsToDto dto)
         {
@@ -387,9 +387,9 @@ namespace IntTech_Controller_Backend.Controllers
 
         }
 
-        // GET: api/LumoRemote/lumoGames/{gameId}/tags
+        // GET: api/LumoRemote/games/{gameId}/tags
         // Returns resolved tag details for a single game.
-        [HttpGet("lumoGames/{gameId}/tags")]
+        [HttpGet("games/{gameId}/tags")]
         public async Task<IActionResult> GetGameTags(string gameId)
         {
             var game = await _context.Games.FirstOrDefaultAsync(g => g.GameId == gameId);
@@ -438,13 +438,13 @@ namespace IntTech_Controller_Backend.Controllers
         // PLAYLIST ENDPOINTS (Updated for ObjectId)
         // ==========================================
 
-        // GET: api/LumoRemote/lumoPlaylists
-        [HttpGet("lumoPlaylists")]
-        public async Task<IActionResult> GetLumoPlaylists()
+        // GET: api/LumoRemote/playlists
+        [HttpGet("playlists")]
+        public async Task<IActionResult> GetPlaylists()
         {
-            var lumoPlaylists = await _context.Playlists.ToListAsync();
+            var playlists = await _context.Playlists.ToListAsync();
 
-            var gameIdsToFetch = lumoPlaylists
+            var gameIdsToFetch = playlists
              .SelectMany(playlist => playlist.Games)
              .Select(gameRef => gameRef.GameId)
              .Distinct()
@@ -454,7 +454,7 @@ namespace IntTech_Controller_Backend.Controllers
                 .Where(game => gameIdsToFetch.Contains(game.GameId))
                 .ToListAsync();
 
-            var response = lumoPlaylists.Select(p => new LumoPlayPlaylistDTO
+            var response = playlists.Select(p => new PlaylistDTO
             {
                 Id = p.Id,
                 Name = p.Name,
@@ -467,13 +467,13 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(response);
         }
 
-        // POST: api/LumoRemote/lumoPlaylist/add
-        [HttpPost("lumoPlaylist/add")]
-        public async Task<IActionResult> AddPlaylist([FromBody] LumoPlayPlaylist playlist)
+        // POST: api/LumoRemote/playlists/add
+        [HttpPost("playlists/add")]
+        public async Task<IActionResult> AddPlaylist([FromBody] Playlist playlist)
         {
             if (string.IsNullOrEmpty(playlist.Name)) return BadRequest("Name is required");
 
-            if (playlist.Games == null) playlist.Games = new List<LumoPlaylistGame>();
+            if (playlist.Games == null) playlist.Games = new List<PlaylistGame>();
 
             
             playlist.Id = ObjectId.GenerateNewId();
@@ -484,8 +484,8 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(playlist);
         }
 
-        // POST: api/LumoRemote/lumoPlaylist/remove
-        [HttpPost("lumoPlaylist/remove")]
+        // POST: api/LumoRemote/playlists/remove
+        [HttpPost("playlists/remove")]
         public async Task<IActionResult> RemovePlaylist(string playlistId)
         {
             if (!ObjectId.TryParse(playlistId, out ObjectId oid))
@@ -501,8 +501,8 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok($"Playlist '{playlist.Name}' has been removed.");
         }
 
-        // POST: api/LumoRemote/lumoPlaylists/{playlistId}/add-game-to-playlist/{gameId}
-        [HttpPost("lumoPlaylists/{playlistId}/add-game-to-playlist/{gameId}")]
+        // POST: api/LumoRemote/playlists/{playlistId}/add-game-to-playlist/{gameId}
+        [HttpPost("playlists/{playlistId}/add-game-to-playlist/{gameId}")]
         public async Task<IActionResult> AddGameToPlaylistById(string playlistId, string gameId)
         {
             if (!ObjectId.TryParse(playlistId, out ObjectId oid))
@@ -514,11 +514,11 @@ namespace IntTech_Controller_Backend.Controllers
             if (playlist == null) return NotFound("Playlist ID not found");
             if (game == null) return NotFound("Game ID not found");
 
-            if (playlist.Games == null) playlist.Games = new List<LumoPlaylistGame>();
+            if (playlist.Games == null) playlist.Games = new List<PlaylistGame>();
 
             if (!playlist.Games.Any(x => x.GameId == gameId))
             {
-                playlist.Games.Add(new LumoPlaylistGame
+                playlist.Games.Add(new PlaylistGame
                 {
                     GameId = game.GameId,
                     Name = game.Name
@@ -531,8 +531,8 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok("Game already exists in this playlist.");
         }
 
-        // POST: api/LumoRemote/lumoPlaylists/{playlistId}/remove-game-from-playlist/{gameId}
-        [HttpPost("lumoPlaylists/{playlistId}/remove-game-from-playlist/{gameId}")]
+        // POST: api/LumoRemote/playlists/{playlistId}/remove-game-from-playlist/{gameId}
+        [HttpPost("playlists/{playlistId}/remove-game-from-playlist/{gameId}")]
         public async Task<IActionResult> RemoveGameFromPlaylistById(string playlistId, string gameId)
         {
             if (!ObjectId.TryParse(playlistId, out ObjectId oid))

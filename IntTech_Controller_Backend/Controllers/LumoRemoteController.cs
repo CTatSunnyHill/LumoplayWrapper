@@ -562,6 +562,12 @@ namespace IntTech_Controller_Backend.Controllers
             if (playlist == null) return NotFound("Playlist ID not found");
             if (game == null) return NotFound("Game ID not found");
 
+            if ((game.Platform ?? "lumoplay") != "lumoplay")
+            {
+                return BadRequest(new { Message = "Only LUMOplay games can be added to playlists." });
+            }
+
+
             if (playlist.Games == null) playlist.Games = new List<PlaylistGame>();
 
             if (!playlist.Games.Any(x => x.GameId == gameId))
@@ -612,6 +618,12 @@ namespace IntTech_Controller_Backend.Controllers
         {
             if (string.IsNullOrWhiteSpace(ipAddress) || string.IsNullOrWhiteSpace(gameId))
                 return BadRequest("IP Address and Game ID are required.");
+
+            var game = await _context.Games.FirstOrDefaultAsync(g => g.GameId == gameId);
+            if (game != null && (game.Platform ?? "lumoplay") != "lumoplay")
+            {
+                return BadRequest(new { Message = "Only LUMOplay games can be played on devices." });
+            }
 
             var device = await _context.Devices
                 .FirstOrDefaultAsync(d => d.IpAddress == ipAddress);

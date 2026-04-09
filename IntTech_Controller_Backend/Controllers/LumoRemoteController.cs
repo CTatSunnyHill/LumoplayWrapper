@@ -237,13 +237,15 @@ namespace IntTech_Controller_Backend.Controllers
                 return BadRequest(new { Message = $"Invalid platform: '{platform}'. Valid values: {string.Join(",", PlatformTypes.All)}" });
             }
 
-            var query = _context.Games.AsQueryable();
-            var games = await query.ToListAsync();
-            
+            var gamesQuery = _context.Games.AsQueryable();
             if (platform != null)
             {
-                games = games.Where(g => (g.Platform ?? "lumoplay") == platform).ToList();
+                if (platform == PlatformTypes.LumoPlay)
+                    gamesQuery = gamesQuery.Where(g => g.Platform == null || g.Platform == PlatformTypes.LumoPlay);
+                else
+                    gamesQuery = gamesQuery.Where(g => g.Platform == platform);
             }
+            var games = await gamesQuery.ToListAsync();
             var allTags = await _context.Tags.ToListAsync();
             var allCategories = await _context.Categories.ToListAsync();
 
@@ -303,7 +305,45 @@ namespace IntTech_Controller_Backend.Controllers
                 return NotFound($"Game with ID '{gameId}' not found.");
             }
 
-            return Ok(game);
+            var allTags = await _context.Tags.ToListAsync();
+            var allCategories = await _context.Categories.ToListAsync();
+
+            var tagLookup = allTags.ToDictionary(t => t.Id);
+            var categoryLookup = allCategories.ToDictionary(c => c.Id);
+
+            var resolvedTags = (game.TagIds ?? new List<ObjectId>())
+                .Where(id => tagLookup.ContainsKey(id))
+                .Select(id =>
+                {
+                    var tag = tagLookup[id];
+                    var cat = categoryLookup.ContainsKey(tag.CategoryId)
+                        ? categoryLookup[tag.CategoryId]
+                        : null;
+
+                    return new
+                    {
+                        Id = tag.Id.ToString(),
+                        tag.Name,
+                        tag.Slug,
+                        tag.ColorHex,
+                        CategoryId = tag.CategoryId.ToString(),
+                        CategoryName = cat?.Name ?? "Unknown",
+                        CategorySlug = cat?.Slug ?? "unknown",
+                        ParentTagId = tag.ParentTagId?.ToString()
+                    };
+                })
+                .ToList();
+
+            return Ok(new
+            {
+                Id = game.Id.ToString(),
+                game.GameId,
+                game.Name,
+                game.ImageFileName,
+                game.Description,
+                game.Platform,
+                Tags = resolvedTags
+            });
         }
 
         // POST: api/LumoRemote/games
@@ -562,7 +602,7 @@ namespace IntTech_Controller_Backend.Controllers
             if (playlist == null) return NotFound("Playlist ID not found");
             if (game == null) return NotFound("Game ID not found");
 
-            if ((game.Platform ?? "lumoplay") != "lumoplay")
+            if ((game.Platform ?? PlatformTypes.LumoPlay) != PlatformTypes.LumoPlay)
             {
                 return BadRequest(new { Message = "Only LUMOplay games can be added to playlists." });
             }
@@ -620,7 +660,7 @@ namespace IntTech_Controller_Backend.Controllers
                 return BadRequest("IP Address and Game ID are required.");
 
             var game = await _context.Games.FirstOrDefaultAsync(g => g.GameId == gameId);
-            if (game != null && (game.Platform ?? "lumoplay") != "lumoplay")
+            if (game != null && (game.Platform ?? PlatformTypes.LumoPlay) != PlatformTypes.LumoPlay)
             {
                 return BadRequest(new { Message = "Only LUMOplay games can be played on devices." });
             }

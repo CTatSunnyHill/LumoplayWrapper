@@ -410,10 +410,10 @@ namespace IntTech_Controller_Backend.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateGame(string gameId, [FromBody] UpdateGameDto dto)
         {
-            if (dto == null) return BadRequest(new { Message = "Request body is required." });
+            if (dto == null) return BadRequest("Request body is required.");
 
             var game = await _context.Games.FirstOrDefaultAsync(g => g.GameId == gameId);
-            if (game == null) return NotFound(new { Message = $"Game with ID '{gameId}' not found." });
+            if (game == null) return NotFound($"Game with ID '{gameId}' not found.");
 
             if (!string.IsNullOrWhiteSpace(dto.Name))
             {

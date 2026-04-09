@@ -8,8 +8,8 @@ namespace IntTech_Controller_Backend.Data
     public class IntTechDBContext : DbContext
     {
         public DbSet<Device> Devices { get; set; }
-        public DbSet<LumoPlayGame> Games { get; set; }
-        public DbSet<LumoPlayPlaylist> Playlists { get; set; }
+        public DbSet<Game> Games { get; set; }
+        public DbSet<Playlist> Playlists { get; set; }
         public DbSet<Projector> Projectors { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Location> Locations { get; set; }
@@ -27,8 +27,8 @@ namespace IntTech_Controller_Backend.Data
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<Device>().ToCollection("devices");
-            modelBuilder.Entity<LumoPlayGame>().ToCollection("lumoGames");
-            modelBuilder.Entity<LumoPlayPlaylist>().ToCollection("lumoPlaylists");
+            modelBuilder.Entity<Game>().ToCollection("games");
+            modelBuilder.Entity<Playlist>().ToCollection("playlists");
             modelBuilder.Entity<Projector>().ToCollection("projectors");
             modelBuilder.Entity<User>().ToCollection("users");
             modelBuilder.Entity<Location>().ToCollection("locations");

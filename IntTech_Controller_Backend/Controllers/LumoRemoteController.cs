@@ -405,6 +405,48 @@ namespace IntTech_Controller_Backend.Controllers
             });
         }
 
+        // PUT: api/LumoRemote/games/{gameId}
+        [HttpPut("games/{gameId}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateGame(string gameId, [FromBody] UpdateGameDto dto)
+        {
+            if (dto == null) return BadRequest(new { Message = "Request body is required." });
+
+            var game = await _context.Games.FirstOrDefaultAsync(g => g.GameId == gameId);
+            if (game == null) return NotFound(new { Message = $"Game with ID '{gameId}' not found." });
+
+            if (!string.IsNullOrWhiteSpace(dto.Name))
+            {
+                game.Name = dto.Name.Trim();
+            }
+
+            // Allow setting description to empty string (clearing it)
+            if (dto.Description != null)
+            {
+                game.Description = dto.Description.Trim();
+            }
+
+            // Allow setting imageFileName to empty string (clearing it)
+            if (dto.ImageFileName != null)
+            {
+                game.ImageFileName = string.IsNullOrWhiteSpace(dto.ImageFileName)
+                    ? null
+                    : dto.ImageFileName.Trim();
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                Id = game.Id.ToString(),
+                game.GameId,
+                game.Name,
+                game.Description,
+                game.ImageFileName,
+                game.Platform
+            });
+        }
+
         // DELETE: api/LumoRemote/games/{gameId}
         [HttpDelete("games/{gameId}")]
         [Authorize(Roles = "Admin")]

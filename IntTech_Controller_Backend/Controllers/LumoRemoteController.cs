@@ -19,11 +19,13 @@ namespace IntTech_Controller_Backend.Controllers
     {
         private readonly IntTechDBContext _context;
         private readonly LumoCommandService _commandService;
+        private readonly IWebHostEnvironment _env;
 
-        public LumoRemoteController(IntTechDBContext context, LumoCommandService commandService)
+        public LumoRemoteController(IntTechDBContext context, LumoCommandService commandService, IWebHostEnvironment env)
         {
             _context = context;
             _commandService = commandService;
+            _env = env;
         }
 
         // ==========================================
@@ -495,7 +497,7 @@ namespace IntTech_Controller_Backend.Controllers
             }
             var newFileName = $"{sanitized}{extension}";
 
-            var imagesPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
+            var imagesPath = Path.Combine(_env.WebRootPath, "images");
             if (!Directory.Exists(imagesPath))
             {
                 Directory.CreateDirectory(imagesPath);
@@ -550,7 +552,7 @@ namespace IntTech_Controller_Backend.Controllers
             {
                 return BadRequest("This game does not have an associated image.");
             }
-            var imagesPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
+            var imagesPath = Path.Combine(_env.WebRootPath, "images");
             var filePath = Path.Combine(imagesPath, game.ImageFileName);
             if (System.IO.File.Exists(filePath))
             {

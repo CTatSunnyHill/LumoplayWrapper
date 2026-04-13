@@ -497,14 +497,24 @@ namespace IntTech_Controller_Backend.Controllers
                 Directory.CreateDirectory(imagesPath);
             }
 
-            var filePath = Path.Combine(imagesPath, newFileName);
+            var imagesFullPath = Path.GetFullPath(imagesPath);
+            var filePath = Path.Combine(imagesFullPath, newFileName);
 
             if (!string.IsNullOrEmpty(game.ImageFileName))
             {
-                var oldFilePath = Path.Combine(imagesPath, game.ImageFileName);
-                if (System.IO.File.Exists(oldFilePath))
+                var storedFileName = Path.GetFileName(game.ImageFileName);
+                if (string.Equals(storedFileName, game.ImageFileName, StringComparison.Ordinal))
                 {
-                    System.IO.File.Delete(oldFilePath);
+                    var oldFilePath = Path.GetFullPath(Path.Combine(imagesFullPath, storedFileName));
+                    var imagesPathPrefix = imagesFullPath.EndsWith(Path.DirectorySeparatorChar)
+                        ? imagesFullPath
+                        : imagesFullPath + Path.DirectorySeparatorChar;
+
+                    if (oldFilePath.StartsWith(imagesPathPrefix, StringComparison.Ordinal) &&
+                        System.IO.File.Exists(oldFilePath))
+                    {
+                        System.IO.File.Delete(oldFilePath);
+                    }
                 }
             }
 

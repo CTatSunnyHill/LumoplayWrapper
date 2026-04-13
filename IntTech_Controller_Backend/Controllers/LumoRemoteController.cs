@@ -487,8 +487,12 @@ namespace IntTech_Controller_Backend.Controllers
             var game = await _context.Games.FirstOrDefaultAsync(g => g.GameId == gameId);
             if (game == null) return NotFound($"Game with ID '{gameId}' not found.");
 
-            var sanitized = Regex.Replace(game.Name.ToLower().Trim(),@"\s+","-");
+            var sanitized = Regex.Replace(game.Name.ToLower().Trim(), @"\s+", "-");
             sanitized = Regex.Replace(sanitized, @"[^a-z0-9\-]", ""); // Remove invalid chars
+            if (string.IsNullOrWhiteSpace(sanitized))
+            {
+                sanitized = game.GameId.ToString();
+            }
             var newFileName = $"{sanitized}{extension}";
 
             var imagesPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");

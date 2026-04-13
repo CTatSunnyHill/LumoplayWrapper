@@ -468,13 +468,13 @@ namespace IntTech_Controller_Backend.Controllers
         }
 
         // POST: api/LumoRemote/games/{gameId}/image
-        // Uploads an image file and associated it withg a game
+        // Uploads an image file and associates it with a game
         [HttpPost("games/{gameId}/image")]
         [Authorize(Roles = "Admin")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> UploadGameImage(string gameId, IFormFile file)
         {
-            if (file == null || file.Length == 0) return BadRequest("No File Uploaded");
+            if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
 
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp"};
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();

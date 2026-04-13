@@ -8,6 +8,7 @@ using MongoDB.Bson;
 using System.Diagnostics;
 using System.Security.Claims;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace IntTech_Controller_Backend.Controllers
 {
@@ -18,11 +19,13 @@ namespace IntTech_Controller_Backend.Controllers
     {
         private readonly IntTechDBContext _context;
         private readonly LumoCommandService _commandService;
+        private readonly IWebHostEnvironment _env;
 
-        public LumoRemoteController(IntTechDBContext context, LumoCommandService commandService)
+        public LumoRemoteController(IntTechDBContext context, LumoCommandService commandService, IWebHostEnvironment env)
         {
             _context = context;
             _commandService = commandService;
+            _env = env;
         }
 
         // ==========================================
@@ -405,6 +408,48 @@ namespace IntTech_Controller_Backend.Controllers
             });
         }
 
+        // PUT: api/LumoRemote/games/{gameId}
+        [HttpPut("games/{gameId}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateGame(string gameId, [FromBody] UpdateGameDto dto)
+        {
+            if (dto == null) return BadRequest("Request body is required.");
+
+            var game = await _context.Games.FirstOrDefaultAsync(g => g.GameId == gameId);
+            if (game == null) return NotFound($"Game with ID '{gameId}' not found.");
+
+            if (!string.IsNullOrWhiteSpace(dto.Name))
+            {
+                game.Name = dto.Name.Trim();
+            }
+
+            // Allow setting description to empty string (clearing it)
+            if (dto.Description != null)
+            {
+                game.Description = dto.Description.Trim();
+            }
+
+            // Allow setting imageFileName to empty string (clearing it)
+            if (dto.ImageFileName != null)
+            {
+                game.ImageFileName = string.IsNullOrWhiteSpace(dto.ImageFileName)
+                    ? null
+                    : dto.ImageFileName.Trim();
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                Id = game.Id.ToString(),
+                game.GameId,
+                game.Name,
+                game.Description,
+                game.ImageFileName,
+                game.Platform
+            });
+        }
+
         // DELETE: api/LumoRemote/games/{gameId}
         [HttpDelete("games/{gameId}")]
         [Authorize(Roles = "Admin")]
@@ -423,6 +468,102 @@ namespace IntTech_Controller_Backend.Controllers
 
             return Ok($"Game '{game.Name}' was removed from the library.");
         }
+
+        // POST: api/LumoRemote/games/{gameId}/image
+        // Uploads an image file and associates it with a game
+        [HttpPost("games/{gameId}/image")]
+        [Authorize(Roles = "Admin")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadGameImage(string gameId, IFormFile file)
+        {
+            if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
+
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp"};
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+            if (!allowedExtensions.Contains(extension)) return BadRequest($"Invalid file type '{extension}'. Allowed: {string.Join(", ", allowedExtensions)}");
+
+            const long maxFileSize = 5 * 1024 * 1024; // 5 MB
+            if (file.Length > maxFileSize) return BadRequest($"File size exceeds the 5MB limit.");
+
+            var game = await _context.Games.FirstOrDefaultAsync(g => g.GameId == gameId);
+            if (game == null) return NotFound($"Game with ID '{gameId}' not found.");
+
+            var sanitized = Regex.Replace(game.Name.ToLower().Trim(), @"\s+", "-");
+            sanitized = Regex.Replace(sanitized, @"[^a-z0-9\-]", ""); // Remove invalid chars
+            if (string.IsNullOrWhiteSpace(sanitized))
+            {
+                sanitized = game.GameId.ToString();
+            }
+            var newFileName = $"{sanitized}{extension}";
+
+            var imagesPath = Path.Combine(_env.WebRootPath, "images");
+            if (!Directory.Exists(imagesPath))
+            {
+                Directory.CreateDirectory(imagesPath);
+            }
+
+            var imagesFullPath = Path.GetFullPath(imagesPath);
+            var filePath = Path.Combine(imagesFullPath, newFileName);
+
+            if (!string.IsNullOrEmpty(game.ImageFileName))
+            {
+                var storedFileName = Path.GetFileName(game.ImageFileName);
+                if (string.Equals(storedFileName, game.ImageFileName, StringComparison.Ordinal))
+                {
+                    var oldFilePath = Path.GetFullPath(Path.Combine(imagesFullPath, storedFileName));
+                    var imagesPathPrefix = imagesFullPath.EndsWith(Path.DirectorySeparatorChar)
+                        ? imagesFullPath
+                        : imagesFullPath + Path.DirectorySeparatorChar;
+
+                    if (oldFilePath.StartsWith(imagesPathPrefix, StringComparison.Ordinal) &&
+                        System.IO.File.Exists(oldFilePath))
+                    {
+                        System.IO.File.Delete(oldFilePath);
+                    }
+                }
+            }
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            game.ImageFileName = newFileName;
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                Message = $"Image uploaded and associated with game '{game.Name}'",
+                ImageFileName = newFileName,
+                ImageUrl = $"/images/{newFileName}"
+            });
+        }
+
+        // DELETE: api/LumoRemote/games/{gameId}/image
+        // Removes the image file from the associated game and deletes the file from the server
+        [HttpDelete("games/{gameId}/image")]
+        [Authorize (Roles = "Admin")]
+        public async Task<IActionResult> DeleteGameImage(string gameId)
+        {
+            var game = await _context.Games.FirstOrDefaultAsync(g => g.GameId == gameId);
+            if (game == null) return NotFound($"Game with ID '{gameId}' not found.");
+            if (string.IsNullOrEmpty(game.ImageFileName))
+            {
+                return BadRequest("This game does not have an associated image.");
+            }
+            var imagesPath = Path.Combine(_env.WebRootPath, "images");
+            var filePath = Path.Combine(imagesPath, game.ImageFileName);
+            if (System.IO.File.Exists(filePath))
+            {
+                System.IO.File.Delete(filePath);
+            }
+            game.ImageFileName = null;
+            await _context.SaveChangesAsync();
+            return Ok($"Image for game '{game.Name}' has been removed.");
+        }
+
+
 
         // POST: api/LumoRemote/games/{gameId}/tags
         // Replaces ALL tag assignments for a game in one call.

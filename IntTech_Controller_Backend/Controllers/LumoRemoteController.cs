@@ -613,10 +613,10 @@ namespace IntTech_Controller_Backend.Controllers
             var onePagersFullPath = Path.GetFullPath(onePagersPath);
             var filePath = Path.Combine(onePagersFullPath, newFileName);
 
-            if (!string.IsNullOrEmpty(game.ImageFileName))
+            if (!string.IsNullOrEmpty(game.OnePagerFileName))
             {
-                var storedFileName = Path.GetFileName(game.ImageFileName);
-                if (string.Equals(storedFileName, game.ImageFileName, StringComparison.Ordinal))
+                var storedFileName = Path.GetFileName(game.OnePagerFileName);
+                if (string.Equals(storedFileName, game.OnePagerFileName, StringComparison.Ordinal))
                 {
                     var oldFilePath = Path.GetFullPath(Path.Combine(onePagersFullPath, storedFileName));
                     var imagesPathPrefix = onePagersFullPath.EndsWith(Path.DirectorySeparatorChar)

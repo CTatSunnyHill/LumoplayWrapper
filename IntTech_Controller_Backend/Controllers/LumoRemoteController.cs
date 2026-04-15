@@ -655,12 +655,12 @@ namespace IntTech_Controller_Backend.Controllers
         {
             var game = await _context.Games.FirstOrDefaultAsync(g => g.GameId == gameId);
             if (game == null) return NotFound($"Game with ID '{gameId}' not found.");
-            if (string.IsNullOrEmpty(game.ImageFileName))
+            if (string.IsNullOrEmpty(game.OnePagerFileName))
             {
                 return BadRequest("This game does not have an associated one pager.");
             }
             var imagesPath = Path.Combine(_env.WebRootPath, "one-pagers");
-            var filePath = Path.Combine(imagesPath, game.ImageFileName);
+            var filePath = Path.Combine(imagesPath, game.OnePagerFileName);
             if (System.IO.File.Exists(filePath))
             {
                 System.IO.File.Delete(filePath);

@@ -289,6 +289,7 @@ namespace IntTech_Controller_Backend.Controllers
                     game.ImageFileName,
                     game.Description,
                     game.Platform,
+                    game.OnePagerFileName,
                     Tags = resolvedTags
                 };
             });
@@ -345,6 +346,7 @@ namespace IntTech_Controller_Backend.Controllers
                 game.ImageFileName,
                 game.Description,
                 game.Platform,
+                game.OnePagerFileName,
                 Tags = resolvedTags
             });
         }
@@ -390,8 +392,10 @@ namespace IntTech_Controller_Backend.Controllers
                 Name = dto.Name.Trim(),
                 Description = dto.Description?.Trim(),
                 ImageFileName = dto.ImageFileName?.Trim(),
+                OnePagerFileName = dto.OnePagerFileName?.Trim(),
                 Platform = platform,
-                TagIds = new List<ObjectId>()
+                TagIds = new List<ObjectId>(),
+
             };
 
             _context.Games.Add(game);
@@ -404,6 +408,7 @@ namespace IntTech_Controller_Backend.Controllers
                 game.Name,
                 game.Description,
                 game.ImageFileName,
+                game.OnePagerFileName,
                 game.Platform
             });
         }
@@ -437,6 +442,13 @@ namespace IntTech_Controller_Backend.Controllers
                     : dto.ImageFileName.Trim();
             }
 
+            if (dto.OnePagerFileName != null)
+            {
+                game.OnePagerFileName = string.IsNullOrWhiteSpace(dto.OnePagerFileName)
+                    ? null
+                    : dto.OnePagerFileName.Trim();
+            }
+
             await _context.SaveChangesAsync();
 
             return Ok(new
@@ -446,6 +458,7 @@ namespace IntTech_Controller_Backend.Controllers
                 game.Name,
                 game.Description,
                 game.ImageFileName,
+                game.OnePagerFileName,
                 game.Platform
             });
         }
@@ -561,6 +574,100 @@ namespace IntTech_Controller_Backend.Controllers
             game.ImageFileName = null;
             await _context.SaveChangesAsync();
             return Ok($"Image for game '{game.Name}' has been removed.");
+        }
+
+        // POST: api/LumoRemote/games/{gameId}/one-pager
+        // Uploads an one pager file and associates it with a game
+        [HttpPost("games/{gameId}/one-pager")]
+        [Authorize(Roles = "Admin")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadGameOnePager(string gameId, IFormFile file)
+        {
+            if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
+
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+            if (!allowedExtensions.Contains(extension)) return BadRequest($"Invalid file type '{extension}'. Allowed: {string.Join(", ", allowedExtensions)}");
+
+            const long maxFileSize = 10 * 1024 * 1024; // 10 MB
+            if (file.Length > maxFileSize) return BadRequest($"File size exceeds the 10 MB limit.");
+
+            var game = await _context.Games.FirstOrDefaultAsync(g => g.GameId == gameId);
+            if (game == null) return NotFound($"Game with ID '{gameId}' not found.");
+
+            var sanitized = Regex.Replace(game.Name.ToLower().Trim(), @"\s+", "-");
+            sanitized = Regex.Replace(sanitized, @"[^a-z0-9\-]", ""); // Remove invalid chars
+            if (string.IsNullOrWhiteSpace(sanitized))
+            {
+                sanitized = game.GameId.ToString();
+            }
+            var newFileName = $"{sanitized}-onepager{extension}";
+
+            var onePagersPath = Path.Combine(_env.WebRootPath, "one-pagers");
+            if (!Directory.Exists(onePagersPath))
+            {
+                Directory.CreateDirectory(onePagersPath);
+            }
+
+            var onePagersFullPath = Path.GetFullPath(onePagersPath);
+            var filePath = Path.Combine(onePagersFullPath, newFileName);
+
+            if (!string.IsNullOrEmpty(game.OnePagerFileName))
+            {
+                var storedFileName = Path.GetFileName(game.OnePagerFileName);
+                if (string.Equals(storedFileName, game.OnePagerFileName, StringComparison.Ordinal))
+                {
+                    var oldFilePath = Path.GetFullPath(Path.Combine(onePagersFullPath, storedFileName));
+                    var imagesPathPrefix = onePagersFullPath.EndsWith(Path.DirectorySeparatorChar)
+                        ? onePagersFullPath
+                        : onePagersFullPath + Path.DirectorySeparatorChar;
+
+                    if (oldFilePath.StartsWith(imagesPathPrefix, StringComparison.Ordinal) &&
+                        System.IO.File.Exists(oldFilePath))
+                    {
+                        System.IO.File.Delete(oldFilePath);
+                    }
+                }
+            }
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            game.OnePagerFileName = newFileName;
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                Message = $"One Pager uploaded and associated with game '{game.Name}'",
+                OnePagerFileName = newFileName,
+                OnePagerUrl = $"/one-pagers/{newFileName}"
+            });
+        }
+
+        // DELETE: api/LumoRemote/games/{gameId}/one-pager
+        // Removes the one pager file from the associated game and deletes the file from the server
+        [HttpDelete("games/{gameId}/one-pager")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteGameOnePager(string gameId)
+        {
+            var game = await _context.Games.FirstOrDefaultAsync(g => g.GameId == gameId);
+            if (game == null) return NotFound($"Game with ID '{gameId}' not found.");
+            if (string.IsNullOrEmpty(game.OnePagerFileName))
+            {
+                return BadRequest("This game does not have an associated one pager.");
+            }
+            var imagesPath = Path.Combine(_env.WebRootPath, "one-pagers");
+            var filePath = Path.Combine(imagesPath, game.OnePagerFileName);
+            if (System.IO.File.Exists(filePath))
+            {
+                System.IO.File.Delete(filePath);
+            }
+            game.OnePagerFileName = null;
+            await _context.SaveChangesAsync();
+            return Ok($"One pager for game '{game.Name}' has been removed.");
         }
 
 

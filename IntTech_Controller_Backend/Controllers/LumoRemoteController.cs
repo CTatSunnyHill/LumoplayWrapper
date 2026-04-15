@@ -576,7 +576,7 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok($"Image for game '{game.Name}' has been removed.");
         }
 
-        // POST: api/LumoRemote/games/{gameId}/image
+        // POST: api/LumoRemote/games/{gameId}/one-pager
         // Uploads an one pager file and associates it with a game
         [HttpPost("games/{gameId}/one-pager")]
         [Authorize(Roles = "Admin")]

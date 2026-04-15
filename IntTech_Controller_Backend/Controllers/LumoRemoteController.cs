@@ -641,7 +641,7 @@ namespace IntTech_Controller_Backend.Controllers
 
             return Ok(new
             {
-                Message = $"Image uploaded and associated with game '{game.Name}'",
+                Message = $"One Pager uploaded and associated with game '{game.Name}'",
                 OnePagerFileName = newFileName,
                 OnePagerUrl = $"/one-pagers/{newFileName}"
             });

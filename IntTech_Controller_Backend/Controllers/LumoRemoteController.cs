@@ -642,8 +642,8 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(new
             {
                 Message = $"Image uploaded and associated with game '{game.Name}'",
-                ImageFileName = newFileName,
-                ImageUrl = $"/images/{newFileName}"
+                OnePagerFileName = newFileName,
+                OnePagerUrl = $"/one-pagers/{newFileName}"
             });
         }
 
@@ -659,13 +659,13 @@ namespace IntTech_Controller_Backend.Controllers
             {
                 return BadRequest("This game does not have an associated one pager.");
             }
-            var imagesPath = Path.Combine(_env.WebRootPath, "one-pager");
+            var imagesPath = Path.Combine(_env.WebRootPath, "one-pagers");
             var filePath = Path.Combine(imagesPath, game.ImageFileName);
             if (System.IO.File.Exists(filePath))
             {
                 System.IO.File.Delete(filePath);
             }
-            game.ImageFileName = null;
+            game.OnePagerFileName = null;
             await _context.SaveChangesAsync();
             return Ok($"One pager for game '{game.Name}' has been removed.");
         }

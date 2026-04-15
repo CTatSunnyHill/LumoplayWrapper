@@ -28,7 +28,7 @@ namespace IntTech_Controller_Backend.Models
         [BsonElement("platform")]
         public string Platform { get; set; } = "lumoplay";
 
-        [BsonElement("OnePagerFileName")]
+        [BsonElement("onePagerFileName")]
         public string? OnePagerFileName { get; set; }
     }
 

@@ -52,23 +52,22 @@ namespace IntTech_Controller_Backend.Controllers
             var devices = await query.ToListAsync();
             var allGames = await _context.Games.ToDictionaryAsync(g => g.GameId);
 
-            // 2. Create a list of checking tasks (Launch them all in parallel)
+            // 2. Create a list of checking task
             var pingTasks = devices.Select(async device =>
             {
                 try
                 {
-                    // We send the "-N" command (Now Playing). 
-                    var result = await _commandService.CurrentStatusAsync(
-                        device.IpAddress,
-                        device.SecurityKey
-                    );
+                    var result = await _commandService.CurrentStatusAsync(device.IpAddress, device.SecurityKey);
 
                     if (result != null)
                     {
                         device.Status = "online";
                         device.LastChecked = DateTime.UtcNow;
 
-                        if (result.NowPlayingIndex.HasValue)
+                        if (result.NowPlayingIndex.HasValue
+                            && result.Scenes != null
+                            && result.NowPlayingIndex.Value >= 0
+                            && result.NowPlayingIndex.Value < result.Scenes.Count)
                         {
                             int nowPlayingIndex = result.NowPlayingIndex.Value;
                             int gameId = result.Scenes[nowPlayingIndex].Scene.ID;
@@ -77,7 +76,6 @@ namespace IntTech_Controller_Backend.Controllers
 
                             if (device.CurrentLumoGameId != null)
                             {
-                                // If the game has changed, update it
                                 if (device.CurrentLumoGameId != gameId.ToString() && allGames.ContainsKey(gameId.ToString()))
                                 {
                                     device.CurrentLumoGameId = allGames[gameId.ToString()].GameId;
@@ -86,7 +84,6 @@ namespace IntTech_Controller_Backend.Controllers
                             }
                             else
                             {
-                                // No current game, just set it
                                 if (allGames.ContainsKey(gameId.ToString()))
                                 {
                                     device.CurrentLumoGameId = allGames[gameId.ToString()].GameId;
@@ -101,17 +98,12 @@ namespace IntTech_Controller_Backend.Controllers
                 }
                 catch
                 {
-                    // If the TCP connection fails or times out
                     device.Status = "offline";
                 }
             });
 
-            // 3. Wait for ALL pings to finish
             await Task.WhenAll(pingTasks);
-
-            // 4. Save the new statuses to the database
             await _context.SaveChangesAsync();
-
             return Ok(devices);
         }
 

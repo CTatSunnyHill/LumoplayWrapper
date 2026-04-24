@@ -90,6 +90,11 @@ namespace IntTech_Controller_Backend.Services
                 // Return the output, if the process returns successfully.
                 return output;
             }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Command execution failed for {targetIp}: {ex.Message}");
+                return null;
+            }
             finally {
                 process.Dispose();
             }

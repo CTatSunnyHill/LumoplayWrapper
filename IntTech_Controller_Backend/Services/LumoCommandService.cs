@@ -54,7 +54,8 @@ namespace IntTech_Controller_Backend.Services
                 _spawnGate.Release();
             }
 
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            var timeout = TimeSpan.FromSeconds(5);
+            using var cts = new CancellationTokenSource(timeout);
             try
             {
                 try
@@ -64,7 +65,7 @@ namespace IntTech_Controller_Backend.Services
                 catch (OperationCanceledException)
                 {
                     try { process.Kill(entireProcessTree: true); } catch { }
-                    _logger.LogWarning("Command to {Ip} timed out after {Ms}ms", targetIp, 5000);
+                    _logger.LogWarning("Command to {Ip} timed out after {Ms}ms", targetIp, (int)timeout.TotalMilliseconds);
                     return null;
                 }
 

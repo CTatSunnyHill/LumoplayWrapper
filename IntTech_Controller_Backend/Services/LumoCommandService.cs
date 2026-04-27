@@ -8,6 +8,7 @@ namespace IntTech_Controller_Backend.Services
     {
         private readonly IConfiguration _config;
         private readonly ILogger<LumoCommandService> _logger;
+        private static readonly SemaphoreSlim _spawnGate = new SemaphoreSlim(1, 1);
 
         public LumoCommandService(IConfiguration config, ILogger<LumoCommandService> logger)
         {
@@ -36,34 +37,43 @@ namespace IntTech_Controller_Backend.Services
                 CreateNoWindow = true,
             };
 
-            using var process = new Process();
+            Process process;
+            Task<string> stdoutTask;
+            Task<string> stderrTask;
 
-            process.StartInfo = psi;
+            await _spawnGate.WaitAsync();
             try
             {
+                process = new Process { StartInfo = psi };
                 process.Start();
+                stdoutTask = process.StandardOutput.ReadToEndAsync();
+                stderrTask = process.StandardError.ReadToEndAsync();
+            }
+            finally
+            {
+                _spawnGate.Release();
+            }
 
-                // 1. TIMEOUT IMPLEMENTATION
-                // If the device is offline, the tool might hang. We kill it after 2 seconds.
-                var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+            var timeout = TimeSpan.FromSeconds(5);
+            using var cts = new CancellationTokenSource(timeout);
+            try
+            {
                 try
                 {
                     await process.WaitForExitAsync(cts.Token);
                 }
                 catch (OperationCanceledException)
                 {
-                    // Timeout happened!
-                    try { process.Kill(); } catch { }
-                    _logger.LogWarning($"Command to {targetIp} timed out.");
-                    return null; // Return NULL so Controller knows it failed
+                    try { process.Kill(entireProcessTree: true); } catch { }
+                    try { await Task.WhenAll(stdoutTask, stderrTask); } catch { }
+                    _logger.LogWarning("Command to {Ip} timed out after {Ms}ms", targetIp, (int)timeout.TotalMilliseconds);
+                    return null;
                 }
 
-                // 2. READ OUTPUTS
-                string output = await process.StandardOutput.ReadToEndAsync();
-                string err = await process.StandardError.ReadToEndAsync();
 
-                // 3. CHECK FOR FAILURE
-                // If the tool reported an error OR exited with a failure code
+                string output = await stdoutTask;
+                string err = await stderrTask;
+
                 if (!string.IsNullOrWhiteSpace(err) || process.ExitCode != 0)
                 {
                     _logger.LogWarning($"LUMO Error from {targetIp}: {err}");
@@ -84,8 +94,11 @@ namespace IntTech_Controller_Backend.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Process execution failed");
+                _logger.LogWarning($"Command execution failed for {targetIp}: {ex.Message}");
                 return null;
+            }
+            finally {
+                process.Dispose();
             }
         }
 

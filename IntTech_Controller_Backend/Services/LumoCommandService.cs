@@ -65,6 +65,7 @@ namespace IntTech_Controller_Backend.Services
                 catch (OperationCanceledException)
                 {
                     try { process.Kill(entireProcessTree: true); } catch { }
+                    try { await Task.WhenAll(stdoutTask, stderrTask); } catch { }
                     _logger.LogWarning("Command to {Ip} timed out after {Ms}ms", targetIp, (int)timeout.TotalMilliseconds);
                     return null;
                 }

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using IntTech_Controller_Backend.Models;
 using MongoDB.EntityFrameworkCore.Extensions;
 
@@ -15,6 +15,7 @@ namespace IntTech_Controller_Backend.Data
         public DbSet<Location> Locations { get; set; }
         public DbSet<Category> Categories{ get; set; }
         public DbSet<Tag> Tags { get; set; }
+        public DbSet<Faq> Faqs { get; set; }
 
 
         public IntTechDBContext(DbContextOptions options) : base (options) 
@@ -34,6 +35,7 @@ namespace IntTech_Controller_Backend.Data
             modelBuilder.Entity<Location>().ToCollection("locations");
             modelBuilder.Entity<Category>().ToCollection("categories");
             modelBuilder.Entity<Tag>().ToCollection("tags");
+            modelBuilder.Entity<Faq>().ToCollection("faqs");
         }
 
     }

@@ -162,15 +162,58 @@ namespace IntTech_Controller_Backend.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ReorderFaqs([FromBody] List<ReorderFaqItem> items)
         {
+            if (items == null)
+                return BadRequest(new { Message = "Request body is required" });
+
+            var invalidIds = new List<string>();
+            var parsedItems = new List<(ReorderFaqItem Item, ObjectId Oid)>();
+
             foreach (var item in items)
             {
-                if (!ObjectId.TryParse(item.Id, out var oid)) continue;
-                var faq = await _context.Faqs.FirstOrDefaultAsync(f => f.Id == oid);
-                if (faq != null)
+                if (!ObjectId.TryParse(item.Id, out var oid))
                 {
-                    faq.DisplayOrder = item.DisplayOrder;
+                    invalidIds.Add(item.Id);
+                    continue;
                 }
+
+                parsedItems.Add((item, oid));
             }
+
+            if (invalidIds.Count > 0)
+            {
+                return BadRequest(new
+                {
+                    Message = "One or more FAQ IDs have an invalid format",
+                    InvalidIds = invalidIds
+                });
+            }
+
+            var requestedIds = parsedItems.Select(x => x.Oid).ToList();
+            var faqs = await _context.Faqs
+                .Where(f => requestedIds.Contains(f.Id))
+                .ToListAsync();
+
+            var faqById = faqs.ToDictionary(f => f.Id, f => f);
+            var missingIds = parsedItems
+                .Where(x => !faqById.ContainsKey(x.Oid))
+                .Select(x => x.Item.Id)
+                .Distinct()
+                .ToList();
+
+            if (missingIds.Count > 0)
+            {
+                return BadRequest(new
+                {
+                    Message = "One or more FAQs were not found",
+                    MissingIds = missingIds
+                });
+            }
+
+            foreach (var parsedItem in parsedItems)
+            {
+                faqById[parsedItem.Oid].DisplayOrder = parsedItem.Item.DisplayOrder;
+            }
+
             await _context.SaveChangesAsync();
             return Ok(new { Message = "Reorder complete" });
         }

@@ -50,8 +50,11 @@ namespace IntTech_Controller_Backend.Controllers
             if (string.IsNullOrWhiteSpace(dto.Question))
                 return BadRequest(new { Message = "Question is required" });
 
-            if (dto.AnswerParagraphs == null || dto.AnswerParagraphs.Count == 0)
-                return BadRequest(new { Message = "At least one answer paragraph is required" });
+            bool hasAnswerParagraphs = dto.AnswerParagraphs != null && dto.AnswerParagraphs.Count > 0;
+            bool hasSteps = dto.Steps != null && dto.Steps.Count > 0;
+
+            if (!hasAnswerParagraphs && !hasSteps)
+                return BadRequest(new { Message = "At least one answer paragraph or step is required" });
 
             if (dto.Audience != "all" && dto.Audience != "admin")
                 return BadRequest(new { Message = "Audience must be \"all\" or \"admin\"" });

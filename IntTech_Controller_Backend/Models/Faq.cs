@@ -60,7 +60,7 @@ namespace IntTech_Controller_Backend.Models
         public string? Detail { get; set; }
     }
 
-    public class ReorderFaqItem
+    public class ReorderFaqItemDto
     {
         public string Id { get; set; }
         public int DisplayOrder { get; set; }

@@ -160,13 +160,13 @@ namespace IntTech_Controller_Backend.Controllers
         // PUT: api/Faq/reorder
         [HttpPut("reorder")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> ReorderFaqs([FromBody] List<ReorderFaqItem> items)
+        public async Task<IActionResult> ReorderFaqs([FromBody] List<ReorderFaqItemDto> items)
         {
             if (items == null)
                 return BadRequest(new { Message = "Request body is required" });
 
             var invalidIds = new List<string>();
-            var parsedItems = new List<(ReorderFaqItem Item, ObjectId Oid)>();
+            var parsedItems = new List<(ReorderFaqItemDto Item, ObjectId Oid)>();
 
             foreach (var item in items)
             {

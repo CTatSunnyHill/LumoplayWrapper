@@ -813,7 +813,7 @@ namespace IntTech_Controller_Backend.Controllers
         }
 
         // POST: api/LumoRemote/playlists/remove
-        [HttpPost("playlists/remove")]
+        [HttpPost("playlists/remove/{playlistId}")]
         public async Task<IActionResult> RemovePlaylist(string playlistId)
         {
             if (!ObjectId.TryParse(playlistId, out ObjectId oid))

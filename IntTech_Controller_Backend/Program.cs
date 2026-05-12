@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using IntTech_Controller_Backend.Models;
 using MongoDB.Bson;
+using MongoDB.Driver;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -67,6 +68,25 @@ using (var scope = app.Services.CreateScope())
         });
         db.SaveChanges();
         Console.WriteLine("Seeded default admin user: admin / admin");
+    }
+}
+
+// --- Playlist compound unique index: (ownerId, name) per-user uniqueness ---
+{
+    var mongoClient = new MongoClient(mongoStr ?? "mongodb://localhost:27017");
+    var database = mongoClient.GetDatabase("inttech_controller");
+    var playlistsCollection = database.GetCollection<BsonDocument>("playlists");
+    var keys = Builders<BsonDocument>.IndexKeys.Ascending("ownerId").Ascending("name");
+    var indexModel = new CreateIndexModel<BsonDocument>(
+        keys,
+        new CreateIndexOptions { Unique = true, Name = "owner_name_unique" });
+    try
+    {
+        playlistsCollection.Indexes.CreateOne(indexModel);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Warning: Could not create playlist compound index: {ex.Message}");
     }
 }
 

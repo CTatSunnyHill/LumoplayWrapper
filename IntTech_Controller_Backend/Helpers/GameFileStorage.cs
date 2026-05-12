@@ -74,8 +74,22 @@ public class GameFileStorage
     {
         if (string.IsNullOrEmpty(fileName)) return;
 
-        var filePath = Path.Combine(_env.WebRootPath, subfolder, fileName);
-        if (File.Exists(filePath))
-            File.Delete(filePath);
+        var folderPath = Path.Combine(_env.WebRootPath, subfolder);
+        var folderFullPath = Path.GetFullPath(folderPath);
+        var storedFileName = Path.GetFileName(fileName);
+
+        if (string.Equals(storedFileName, fileName, StringComparison.Ordinal))
+        {
+            var filePath = Path.GetFullPath(Path.Combine(folderFullPath, storedFileName));
+            var folderPathPrefix = folderFullPath.EndsWith(Path.DirectorySeparatorChar)
+                ? folderFullPath
+                : folderFullPath + Path.DirectorySeparatorChar;
+
+            if (filePath.StartsWith(folderPathPrefix, StringComparison.Ordinal) &&
+                File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+        }
     }
 }

@@ -12,9 +12,23 @@ public static class ClaimsHelper
     public static List<ObjectId> GetAllowedLocationIds(ClaimsPrincipal user)
     {
         var locationsClaim = user.FindFirstValue("AllowedLocationsIds");
-        var allowedLocationIdsStr = string.IsNullOrEmpty(locationsClaim)
-            ? new List<string>()
-            : JsonSerializer.Deserialize<List<string>>(locationsClaim) ?? new List<string>();
+        List<string> allowedLocationIdsStr;
+
+        if (string.IsNullOrEmpty(locationsClaim))
+        {
+            allowedLocationIdsStr = new List<string>();
+        }
+        else
+        {
+            try
+            {
+                allowedLocationIdsStr = JsonSerializer.Deserialize<List<string>>(locationsClaim) ?? new List<string>();
+            }
+            catch (JsonException)
+            {
+                allowedLocationIdsStr = new List<string>();
+            }
+        }
 
         return allowedLocationIdsStr
             .Where(idStr => ObjectId.TryParse(idStr, out _))

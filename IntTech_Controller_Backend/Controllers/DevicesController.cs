@@ -102,9 +102,19 @@ public class DevicesController : ControllerBase
         if (string.IsNullOrWhiteSpace(ipAddress)) return BadRequest("IP Address is required");
 
         var device = await _context.Devices.FirstOrDefaultAsync(d => d.IpAddress == ipAddress);
-        var allGames = await _context.Games.ToDictionaryAsync(g => g.GameId);
 
         if (device == null) return NotFound($"No device found with IP Address: '{ipAddress}'");
+
+        if (!User.IsInRole("Admin"))
+        {
+            var allowedLocationIds = ClaimsHelper.GetAllowedLocationIds(User);
+            if (!allowedLocationIds.Contains(device.LocationId))
+            {
+                return NotFound($"No device found with IP Address: '{ipAddress}'");
+            }
+        }
+
+        var allGames = await _context.Games.ToDictionaryAsync(g => g.GameId);
 
         try
         {

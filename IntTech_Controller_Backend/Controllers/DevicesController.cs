@@ -92,7 +92,40 @@ public class DevicesController : ControllerBase
 
         await Task.WhenAll(pingTasks);
         await _context.SaveChangesAsync();
-        return Ok(devices);
+
+        // Visibility filter: collect distinct bound playlist OIDs, check each once.
+        var userId = ClaimsHelper.GetUserId(User);
+        var boundOids = devices
+            .Where(d => d.ActivePlaylist?.PlaylistId != null)
+            .Select(d => d.ActivePlaylist!.PlaylistId!.Value)
+            .Distinct()
+            .ToList();
+
+        var visibleOids = new HashSet<ObjectId>();
+        foreach (var oid in boundOids)
+        {
+            var playlist = await _context.Playlists.FirstOrDefaultAsync(p => p.Id == oid);
+            if (playlist != null && PlaylistVisibility.CanUserSee(playlist, userId))
+                visibleOids.Add(oid);
+        }
+
+        var response = devices.Select(d => new DeviceResponseDto
+        {
+            Id = d.Id,
+            Name = d.Name,
+            IpAddress = d.IpAddress,
+            LocationId = d.LocationId,
+            Status = d.Status,
+            IsPlaying = d.IsPlaying,
+            CurrentLumoGameId = d.CurrentLumoGameId,
+            ActivePlaylist = (d.ActivePlaylist?.PlaylistId != null
+                && visibleOids.Contains(d.ActivePlaylist.PlaylistId.Value))
+                ? d.ActivePlaylist
+                : null,
+            LastChecked = d.LastChecked,
+        });
+
+        return Ok(response);
     }
 
     // GET: api/Devices/{ipAddress}
@@ -162,7 +195,22 @@ public class DevicesController : ControllerBase
             device.Status = "offline";
         }
 
-        return Ok(device);
+        var userId = ClaimsHelper.GetUserId(User);
+        var visibleActivePlaylist = await PlaylistVisibility.ResolveVisibleActivePlaylist(
+            device, userId, _context.Playlists);
+
+        return Ok(new DeviceResponseDto
+        {
+            Id = device.Id,
+            Name = device.Name,
+            IpAddress = device.IpAddress,
+            LocationId = device.LocationId,
+            Status = device.Status,
+            IsPlaying = device.IsPlaying,
+            CurrentLumoGameId = device.CurrentLumoGameId,
+            ActivePlaylist = visibleActivePlaylist,
+            LastChecked = device.LastChecked,
+        });
     }
 
     // POST: api/Devices

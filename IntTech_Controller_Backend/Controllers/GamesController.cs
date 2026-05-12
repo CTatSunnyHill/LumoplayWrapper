@@ -228,18 +228,63 @@ public class GamesController : ControllerBase
         }
 
         // Allow setting imageFileName to empty string (clearing it)
+        // Sanitize to prevent path traversal and ensure only base file names are stored
         if (dto.ImageFileName != null)
         {
-            game.ImageFileName = string.IsNullOrWhiteSpace(dto.ImageFileName)
-                ? null
-                : dto.ImageFileName.Trim();
+            if (string.IsNullOrWhiteSpace(dto.ImageFileName))
+            {
+                game.ImageFileName = null;
+            }
+            else
+            {
+                var sanitized = dto.ImageFileName.Trim();
+                var baseName = Path.GetFileName(sanitized);
+                
+                // Validate that the sanitized name matches the original (no path components)
+                if (!string.Equals(baseName, sanitized, StringComparison.Ordinal))
+                {
+                    return BadRequest("ImageFileName must be a simple file name without path components.");
+                }
+                
+                // Validate file extension
+                var extension = Path.GetExtension(baseName).ToLowerInvariant();
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+                if (!allowedExtensions.Contains(extension))
+                {
+                    return BadRequest($"ImageFileName has invalid extension '{extension}'. Allowed: {string.Join(", ", allowedExtensions)}");
+                }
+                
+                game.ImageFileName = baseName;
+            }
         }
 
         if (dto.OnePagerFileName != null)
         {
-            game.OnePagerFileName = string.IsNullOrWhiteSpace(dto.OnePagerFileName)
-                ? null
-                : dto.OnePagerFileName.Trim();
+            if (string.IsNullOrWhiteSpace(dto.OnePagerFileName))
+            {
+                game.OnePagerFileName = null;
+            }
+            else
+            {
+                var sanitized = dto.OnePagerFileName.Trim();
+                var baseName = Path.GetFileName(sanitized);
+                
+                // Validate that the sanitized name matches the original (no path components)
+                if (!string.Equals(baseName, sanitized, StringComparison.Ordinal))
+                {
+                    return BadRequest("OnePagerFileName must be a simple file name without path components.");
+                }
+                
+                // Validate file extension
+                var extension = Path.GetExtension(baseName).ToLowerInvariant();
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+                if (!allowedExtensions.Contains(extension))
+                {
+                    return BadRequest($"OnePagerFileName has invalid extension '{extension}'. Allowed: {string.Join(", ", allowedExtensions)}");
+                }
+                
+                game.OnePagerFileName = baseName;
+            }
         }
 
         await _context.SaveChangesAsync();

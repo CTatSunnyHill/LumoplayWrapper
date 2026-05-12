@@ -1,4 +1,5 @@
 using IntTech_Controller_Backend.Data;
+using IntTech_Controller_Backend.Helpers;
 using IntTech_Controller_Backend.Models;
 using IntTech_Controller_Backend.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -43,11 +44,27 @@ public class PlaybackController : ControllerBase
             return NotFound($"No device found with IP: {ipAddress}");
         }
 
+        // Enforce location-based authorization
+        if (!User.IsInRole("Admin"))
+        {
+            var allowedLocationIds = ClaimsHelper.GetAllowedLocationIds(User);
+            if (!allowedLocationIds.Contains(device.LocationId))
+            {
+                return NotFound($"No device found with IP: {ipAddress}");
+            }
+        }
+
         var result = await _commandService.ExecuteCommand(
             device.IpAddress,
             device.SecurityKey,
             $"-g {gameId}"
         );
+
+        // Check if command execution failed
+        if (result == null)
+        {
+            return StatusCode(502, new { Status = "Failed", Message = "Device command timed out or failed" });
+        }
 
         device.Status = "online";
         device.LastChecked = DateTime.UtcNow;
@@ -81,11 +98,27 @@ public class PlaybackController : ControllerBase
             return NotFound($"No device found with IP: {ipAddress}");
         }
 
+        // Enforce location-based authorization
+        if (!User.IsInRole("Admin"))
+        {
+            var allowedLocationIds = ClaimsHelper.GetAllowedLocationIds(User);
+            if (!allowedLocationIds.Contains(device.LocationId))
+            {
+                return NotFound($"No device found with IP: {ipAddress}");
+            }
+        }
+
         var result = await _commandService.ExecuteCommand(
             device.IpAddress,
             device.SecurityKey,
             "-s" // -s is the Stop command
         );
+
+        // Check if command execution failed
+        if (result == null)
+        {
+            return StatusCode(502, new { Status = "Failed", Message = "Device command timed out or failed" });
+        }
 
         device.Status = "online";
         device.IsPlaying = false;
@@ -110,11 +143,27 @@ public class PlaybackController : ControllerBase
             return NotFound($"No device found with IP: {ipAddress}");
         }
 
+        // Enforce location-based authorization
+        if (!User.IsInRole("Admin"))
+        {
+            var allowedLocationIds = ClaimsHelper.GetAllowedLocationIds(User);
+            if (!allowedLocationIds.Contains(device.LocationId))
+            {
+                return NotFound($"No device found with IP: {ipAddress}");
+            }
+        }
+
         var result = await _commandService.ExecuteCommand(
             device.IpAddress,
             device.SecurityKey,
             "-N"
         );
+
+        // Check if command execution failed
+        if (result == null)
+        {
+            return StatusCode(502, new { Status = "Failed", Message = "Device command timed out or failed" });
+        }
 
         device.Status = "online";
         device.LastChecked = DateTime.UtcNow;
@@ -134,6 +183,16 @@ public class PlaybackController : ControllerBase
         var device = await _context.Devices.FirstOrDefaultAsync(d => d.IpAddress == ipAddress);
         if (device == null) return NotFound($"Device not found: {ipAddress}");
 
+        // Enforce location-based authorization
+        if (!User.IsInRole("Admin"))
+        {
+            var allowedLocationIds = ClaimsHelper.GetAllowedLocationIds(User);
+            if (!allowedLocationIds.Contains(device.LocationId))
+            {
+                return NotFound($"Device not found: {ipAddress}");
+            }
+        }
+
         // 2. Fetch Playlist using ObjectId
         if (!ObjectId.TryParse(playlistId, out ObjectId oid))
             return BadRequest("Invalid Playlist ID format.");
@@ -152,6 +211,12 @@ public class PlaybackController : ControllerBase
             device.SecurityKey,
             $"-g {firstGameId}"
         );
+
+        // Check if command execution failed
+        if (result == null)
+        {
+            return StatusCode(502, new { Status = "Failed", Message = "Device command timed out or failed" });
+        }
 
         // 5. Update Database State
         device.Status = "online";
@@ -183,6 +248,17 @@ public class PlaybackController : ControllerBase
         var device = await _context.Devices.FirstOrDefaultAsync(d => d.IpAddress == ipAddress);
 
         if (device == null) return NotFound($"Device not found: {ipAddress}");
+
+        // Enforce location-based authorization
+        if (!User.IsInRole("Admin"))
+        {
+            var allowedLocationIds = ClaimsHelper.GetAllowedLocationIds(User);
+            if (!allowedLocationIds.Contains(device.LocationId))
+            {
+                return NotFound($"Device not found: {ipAddress}");
+            }
+        }
+
         if (device.ActivePlaylist == null) return BadRequest("No active playlist on this device.");
 
         // 2. Fetch the Playlist Definition
@@ -213,6 +289,12 @@ public class PlaybackController : ControllerBase
             $"-g {nextGame.GameId}"
         );
 
+        // Check if command execution failed
+        if (result == null)
+        {
+            return StatusCode(502, new { Status = "Failed", Message = "Device command timed out or failed" });
+        }
+
         // 5. Update Database
         device.ActivePlaylist.CurrentIndex = newIndex;
         device.CurrentLumoGameId = nextGame.GameId;
@@ -242,6 +324,17 @@ public class PlaybackController : ControllerBase
         var device = await _context.Devices.FirstOrDefaultAsync(d => d.IpAddress == ipAddress);
 
         if (device == null) return NotFound($"Device not found: {ipAddress}");
+
+        // Enforce location-based authorization
+        if (!User.IsInRole("Admin"))
+        {
+            var allowedLocationIds = ClaimsHelper.GetAllowedLocationIds(User);
+            if (!allowedLocationIds.Contains(device.LocationId))
+            {
+                return NotFound($"Device not found: {ipAddress}");
+            }
+        }
+
         if (device.ActivePlaylist == null) return BadRequest("No active playlist on this device.");
 
         // 2. Fetch the Playlist Definition
@@ -271,6 +364,12 @@ public class PlaybackController : ControllerBase
             device.SecurityKey,
             $"-g {prevGame.GameId}"
         );
+
+        // Check if command execution failed
+        if (result == null)
+        {
+            return StatusCode(502, new { Status = "Failed", Message = "Device command timed out or failed" });
+        }
 
         // 5. Update Database
         device.ActivePlaylist.CurrentIndex = newIndex;

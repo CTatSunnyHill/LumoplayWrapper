@@ -1,4 +1,5 @@
 using IntTech_Controller_Backend.Data;
+using IntTech_Controller_Backend.Helpers;
 using IntTech_Controller_Backend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +31,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 
 builder.Services.AddSingleton<LumoCommandService>();
 builder.Services.AddSingleton<ProjectorCommandService>();
+builder.Services.AddScoped<GameFileStorage>();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {

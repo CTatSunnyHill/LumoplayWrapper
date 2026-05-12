@@ -35,12 +35,14 @@ public class PlaylistsController : ControllerBase
             .Where(game => gameIdsToFetch.Contains(game.GameId))
             .ToListAsync();
 
+        var gamesById = libraryGames.ToDictionary(game => game.GameId);
+
         var response = playlists.Select(p => new PlaylistDTO
         {
             Id = p.Id,
             Name = p.Name,
             Games = p.Games
-                .Select(pg => libraryGames.FirstOrDefault(lg => lg.GameId == pg.GameId))
+                .Select(pg => gamesById.TryGetValue(pg.GameId, out var game) ? game : null)
                 .Where(g => g != null)
                 .ToList()!
         });

@@ -25,7 +25,7 @@ public static class PlaylistVisibility
         ObjectId userId,
         IQueryable<Playlist> playlists)
     {
-        var distinctPlaylistIds = playlistIds.Distinct().ToList();
+        var distinctPlaylistIds = playlistIds.ToHashSet();
         if (distinctPlaylistIds.Count == 0)
             return [];
 

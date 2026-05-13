@@ -204,7 +204,26 @@ public class PlaylistsController : ControllerBase
 
         _context.Playlists.Add(clone);
         await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetPlaylistById), new { id = clone.Id.ToString() }, clone);
+
+        var gameIds = (clone.Games ?? new List<PlaylistGame>())
+            .Select(g => g.GameId)
+            .Distinct()
+            .ToList();
+
+        var games = await _context.Games
+            .Where(g => gameIds.Contains(g.GameId))
+            .ToListAsync();
+
+        var playlistDto = new PlaylistDTO
+        {
+            Id = clone.Id.ToString(),
+            Name = clone.Name,
+            OwnerId = clone.OwnerId,
+            IsDefault = clone.IsDefault,
+            Games = games
+        };
+
+        return CreatedAtAction(nameof(GetPlaylistById), new { id = clone.Id.ToString() }, playlistDto);
     }
 
     // POST: api/Playlists/{playlistId}/add-game-to-playlist/{gameId}

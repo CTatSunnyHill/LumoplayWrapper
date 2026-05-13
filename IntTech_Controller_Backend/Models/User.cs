@@ -20,8 +20,14 @@ namespace IntTech_Controller_Backend.Models
         [BsonElement("role")]
         public string Role { get; set; }
 
+        [BsonElement("sessionVersion")]
+        public int SessionVersion { get; set; }
+
         [BsonElement("allowedLocationsIds")]
         public List<ObjectId> AllowedLocationsIds { get; set; } = new();
+
+        [BsonElement("allowedTagIds")]
+        public List<ObjectId> AllowedTagIds { get; set; } = new();
 
     }
 

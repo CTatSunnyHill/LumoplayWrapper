@@ -48,12 +48,15 @@ namespace IntTech_Controller_Backend.Controllers
             }
 
             var locationIds = user.AllowedLocationsIds.Select(id => id.ToString()).ToList();
-            var claims = new List<Claim> 
+            var tagIds = user.AllowedTagIds.Select(id => id.ToString()).ToList();
+            var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Role, user.Role),
-                new Claim("AllowedLocationsIds", JsonSerializer.Serialize(locationIds))
+                new Claim("SessionVersion", user.SessionVersion.ToString()),
+                new Claim("AllowedLocationsIds", JsonSerializer.Serialize(locationIds)),
+                new Claim("AllowedTagIds", JsonSerializer.Serialize(tagIds))
             };
 
             var jwtKey = _config["Jwt:Key"] ?? "SuperSecretKeyForIntTechHospitalAppThatIsLongEnough";

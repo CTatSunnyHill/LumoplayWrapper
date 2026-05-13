@@ -47,8 +47,8 @@ namespace IntTech_Controller_Backend.Controllers
                 return Unauthorized(new { message = "Invalid username or password" });
             }
 
-            var locationIds = user.AllowedLocationsIds.Select(id => id.ToString()).ToList();
-            var tagIds = user.AllowedTagIds.Select(id => id.ToString()).ToList();
+            var locationIds = (user.AllowedLocationsIds ?? []).Select(id => id.ToString()).ToList();
+            var tagIds = (user.AllowedTagIds ?? []).Select(id => id.ToString()).ToList();
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),

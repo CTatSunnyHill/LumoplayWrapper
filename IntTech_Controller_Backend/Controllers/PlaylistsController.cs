@@ -44,6 +44,14 @@ public class PlaylistsController : ControllerBase
 
         var gamesById = libraryGames.ToDictionary(g => g.GameId);
 
+        var userRole = ClaimsHelper.GetUserRole(User);
+        var allowedTagIds = userRole != "Admin"
+            ? ClaimsHelper.GetAllowedTagIds(User).ToHashSet()
+            : new HashSet<ObjectId>();
+        var allTagsById = userRole != "Admin"
+            ? await _context.Tags.ToDictionaryAsync(t => t.Id)
+            : new Dictionary<ObjectId, Tag>();
+
         var response = playlists.Select(p => new PlaylistDTO
         {
             Id = p.Id,
@@ -53,6 +61,7 @@ public class PlaylistsController : ControllerBase
             Games = (p.Games ?? new List<PlaylistGame>())
                 .Select(pg => gamesById.TryGetValue(pg.GameId, out var game) ? game : null)
                 .Where(g => g != null)
+                .Where(g => userRole == "Admin" || GameAccessHelper.IsGameVisibleToUser(g!, allowedTagIds, allTagsById))
                 .ToList()!
         });
 
@@ -243,6 +252,15 @@ public class PlaylistsController : ControllerBase
 
         if ((game.Platform ?? PlatformTypes.LumoPlay) != PlatformTypes.LumoPlay)
             return BadRequest(new { Message = "Only LUMOplay games can be added to playlists." });
+
+        var userRole = ClaimsHelper.GetUserRole(User);
+        if (userRole != "Admin")
+        {
+            var allowedTagIds = ClaimsHelper.GetAllowedTagIds(User).ToHashSet();
+            var allTagsById = await _context.Tags.ToDictionaryAsync(t => t.Id);
+            if (!GameAccessHelper.IsGameVisibleToUser(game, allowedTagIds, allTagsById))
+                return Forbid();
+        }
 
         if (playlist.Games == null) playlist.Games = new List<PlaylistGame>();
 

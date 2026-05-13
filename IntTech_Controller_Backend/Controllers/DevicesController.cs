@@ -93,6 +93,14 @@ public class DevicesController : ControllerBase
         await Task.WhenAll(pingTasks);
         await _context.SaveChangesAsync();
 
+        var userRole = ClaimsHelper.GetUserRole(User);
+        var allowedTagIds = userRole != "Admin"
+            ? ClaimsHelper.GetAllowedTagIds(User).ToHashSet()
+            : new HashSet<ObjectId>();
+        var allTagsById = userRole != "Admin"
+            ? await _context.Tags.ToDictionaryAsync(t => t.Id)
+            : new Dictionary<ObjectId, Tag>();
+
         // Visibility filter: collect distinct bound playlist OIDs, check each once.
         var userId = ClaimsHelper.GetUserId(User);
         var boundOids = devices
@@ -106,20 +114,32 @@ public class DevicesController : ControllerBase
             userId,
             _context.Playlists);
 
-        var response = devices.Select(d => new DeviceResponseDto
+        var response = devices.Select(d =>
         {
-            Id = d.Id,
-            Name = d.Name,
-            IpAddress = d.IpAddress,
-            LocationId = d.LocationId,
-            Status = d.Status,
-            IsPlaying = d.IsPlaying,
-            CurrentLumoGameId = d.CurrentLumoGameId,
-            ActivePlaylist = (d.ActivePlaylist?.PlaylistId != null
-                && visibleOids.Contains(d.ActivePlaylist.PlaylistId.Value))
-                ? d.ActivePlaylist
-                : null,
-            LastChecked = d.LastChecked,
+            var currentGameId = d.CurrentLumoGameId;
+            if (userRole != "Admin" && currentGameId != null)
+            {
+                if (!allGames.TryGetValue(currentGameId, out var currentGame) ||
+                    !GameAccessHelper.IsGameVisibleToUser(currentGame, allowedTagIds, allTagsById))
+                {
+                    currentGameId = null;
+                }
+            }
+            return new DeviceResponseDto
+            {
+                Id = d.Id,
+                Name = d.Name,
+                IpAddress = d.IpAddress,
+                LocationId = d.LocationId,
+                Status = d.Status,
+                IsPlaying = d.IsPlaying,
+                CurrentLumoGameId = currentGameId,
+                ActivePlaylist = (d.ActivePlaylist?.PlaylistId != null
+                    && visibleOids.Contains(d.ActivePlaylist.PlaylistId.Value))
+                    ? d.ActivePlaylist
+                    : null,
+                LastChecked = d.LastChecked,
+            };
         });
 
         return Ok(response);
@@ -196,6 +216,18 @@ public class DevicesController : ControllerBase
         var visibleActivePlaylist = await PlaylistVisibility.ResolveVisibleActivePlaylist(
             device, userId, _context.Playlists);
 
+        var currentGameId = device.CurrentLumoGameId;
+        if (!User.IsInRole("Admin") && currentGameId != null)
+        {
+            var allTagsById = await _context.Tags.ToDictionaryAsync(t => t.Id);
+            var allowedTagIds = ClaimsHelper.GetAllowedTagIds(User).ToHashSet();
+            if (!allGames.TryGetValue(currentGameId, out var currentGame) ||
+                !GameAccessHelper.IsGameVisibleToUser(currentGame, allowedTagIds, allTagsById))
+            {
+                currentGameId = null;
+            }
+        }
+
         return Ok(new DeviceResponseDto
         {
             Id = device.Id,
@@ -204,7 +236,7 @@ public class DevicesController : ControllerBase
             LocationId = device.LocationId,
             Status = device.Status,
             IsPlaying = device.IsPlaying,
-            CurrentLumoGameId = device.CurrentLumoGameId,
+            CurrentLumoGameId = currentGameId,
             ActivePlaylist = visibleActivePlaylist,
             LastChecked = device.LastChecked,
         });

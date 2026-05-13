@@ -48,7 +48,11 @@ public class GamesController : ControllerBase
         var tagLookup = allTags.ToDictionary(t => t.Id);
         var categoryLookup = allCategories.ToDictionary(c => c.Id);
 
-        var response = games.Select(game =>
+        var userRole = ClaimsHelper.GetUserRole(User);
+        var allowedTagIds = ClaimsHelper.GetAllowedTagIds(User).ToHashSet();
+        var visibleGames = GameAccessHelper.FilterVisibleGames(games, userRole, allowedTagIds, tagLookup);
+
+        var response = visibleGames.Select(game =>
         {
             // Resolve tagIds to structured tag info
             var resolvedTags = (game.TagIds ?? new List<ObjectId>())
@@ -107,6 +111,14 @@ public class GamesController : ControllerBase
 
         var tagLookup = allTags.ToDictionary(t => t.Id);
         var categoryLookup = allCategories.ToDictionary(c => c.Id);
+
+        var userRole = ClaimsHelper.GetUserRole(User);
+        if (userRole != "Admin")
+        {
+            var allowedTagIds = ClaimsHelper.GetAllowedTagIds(User).ToHashSet();
+            if (!GameAccessHelper.IsGameVisibleToUser(game, allowedTagIds, tagLookup))
+                return NotFound($"Game with ID '{gameId}' not found.");
+        }
 
         var resolvedTags = (game.TagIds ?? new List<ObjectId>())
             .Where(id => tagLookup.ContainsKey(id))

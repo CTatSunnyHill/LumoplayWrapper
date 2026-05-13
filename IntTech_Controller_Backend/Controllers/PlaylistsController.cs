@@ -50,7 +50,7 @@ public class PlaylistsController : ControllerBase
             : new HashSet<ObjectId>();
         var allTagsById = userRole != "Admin"
             ? await _context.Tags.ToDictionaryAsync(t => t.Id)
-            : new Dictionary<ObjectId, Tag>();
+            : new Dictionary<ObjectId, Models.Tag>();
 
         var response = playlists.Select(p => new PlaylistDTO
         {
@@ -225,7 +225,7 @@ public class PlaylistsController : ControllerBase
 
         var playlistDto = new PlaylistDTO
         {
-            Id = clone.Id.ToString(),
+            Id = clone.Id,
             Name = clone.Name,
             OwnerId = clone.OwnerId,
             IsDefault = clone.IsDefault,

@@ -92,8 +92,6 @@ public class DevicesController : ControllerBase
 
         await Task.WhenAll(pingTasks);
         await _context.SaveChangesAsync();
-
-        var userRole = ClaimsHelper.GetUserRole(User);
         var allowedTagIds = userRole != "Admin"
             ? ClaimsHelper.GetAllowedTagIds(User).ToHashSet()
             : new HashSet<ObjectId>();

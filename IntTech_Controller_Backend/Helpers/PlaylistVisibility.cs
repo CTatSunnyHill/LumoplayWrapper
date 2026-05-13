@@ -20,6 +20,24 @@ public static class PlaylistVisibility
         return playlist.OwnerId == userId || playlist.IsDefault;
     }
 
+    public static async Task<HashSet<ObjectId>> ResolveVisiblePlaylistIds(
+        IEnumerable<ObjectId> playlistIds,
+        ObjectId userId,
+        IQueryable<Playlist> playlists)
+    {
+        var playlistOidSet = playlistIds.Distinct().ToList();
+        if (playlistOidSet.Count == 0)
+            return [];
+
+        var visibleOids = await playlists
+            .Where(p => playlistOidSet.Contains(p.Id))
+            .Where(VisibleTo(userId))
+            .Select(p => p.Id)
+            .ToListAsync();
+
+        return [.. visibleOids];
+    }
+
     /// <summary>
     /// Returns the ActivePlaylistState the user should see for this device.
     /// Returns null if the device has no active playlist, the playlist no longer exists,
@@ -33,9 +51,7 @@ public static class PlaylistVisibility
         if (device.ActivePlaylist?.PlaylistId == null) return null;
 
         var oid = device.ActivePlaylist.PlaylistId.Value;
-        var playlist = await playlists.FirstOrDefaultAsync(p => p.Id == oid);
-
-        if (playlist == null) return null;
-        return CanUserSee(playlist, userId) ? device.ActivePlaylist : null;
+        var visiblePlaylistOids = await ResolveVisiblePlaylistIds([oid], userId, playlists);
+        return visiblePlaylistOids.Contains(oid) ? device.ActivePlaylist : null;
     }
 }

@@ -101,13 +101,10 @@ public class DevicesController : ControllerBase
             .Distinct()
             .ToList();
 
-        var visibleOids = new HashSet<ObjectId>();
-        foreach (var oid in boundOids)
-        {
-            var playlist = await _context.Playlists.FirstOrDefaultAsync(p => p.Id == oid);
-            if (playlist != null && PlaylistVisibility.CanUserSee(playlist, userId))
-                visibleOids.Add(oid);
-        }
+        var visibleOids = await PlaylistVisibility.ResolveVisiblePlaylistIds(
+            boundOids,
+            userId,
+            _context.Playlists);
 
         var response = devices.Select(d => new DeviceResponseDto
         {

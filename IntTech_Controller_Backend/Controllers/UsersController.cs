@@ -115,9 +115,28 @@ namespace IntTech_Controller_Backend.Controllers
 
             if (user.Username.ToLower() == "admin") return BadRequest("Cannot delete the master admin");
 
+            // Cascade: delete all playlists owned by this user (personal + any defaults they published).
+            var userPlaylists = await _context.Playlists.Where(p => p.OwnerId == oid).ToListAsync();
+            _context.Playlists.RemoveRange(userPlaylists);
+
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
             return Ok(new { Message = "User deleted" });
+        }
+
+        // GET: api/Users/{userId}/playlist-impact
+        // Returns counts of personal and default playlists that would be deleted with the user.
+        [HttpGet("{userId}/playlist-impact")]
+        public async Task<IActionResult> GetPlaylistImpact(string userId)
+        {
+            if (!ObjectId.TryParse(userId, out ObjectId oid)) return BadRequest("Invalid ID");
+
+            var personalCount = await _context.Playlists
+                .CountAsync(p => p.OwnerId == oid && !p.IsDefault);
+            var defaultCount = await _context.Playlists
+                .CountAsync(p => p.OwnerId == oid && p.IsDefault);
+
+            return Ok(new { personalCount, defaultCount });
         }
     }
 }

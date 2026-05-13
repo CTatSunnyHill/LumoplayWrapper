@@ -9,6 +9,12 @@ public static class ClaimsHelper
     public static string GetUserRole(ClaimsPrincipal user) =>
         user.FindFirstValue(ClaimTypes.Role) ?? "";
 
+    public static ObjectId GetUserId(ClaimsPrincipal user)
+    {
+        var idStr = user.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+        return ObjectId.TryParse(idStr, out var oid) ? oid : ObjectId.Empty;
+    }
+
     public static List<ObjectId> GetAllowedLocationIds(ClaimsPrincipal user)
     {
         var locationsClaim = user.FindFirstValue("AllowedLocationsIds");

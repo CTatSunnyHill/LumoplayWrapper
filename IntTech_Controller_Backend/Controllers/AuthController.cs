@@ -71,6 +71,7 @@ namespace IntTech_Controller_Backend.Controllers
                 Token = new JwtSecurityTokenHandler().WriteToken(token),
                 Role = user.Role,
                 Username = user.Username,
+                UserId = user.Id.ToString(),
             });
 
         }

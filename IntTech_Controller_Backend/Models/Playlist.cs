@@ -4,7 +4,7 @@ using MongoDB.EntityFrameworkCore;
 
 namespace IntTech_Controller_Backend.Models
 {
-    [Collection("playlists")]    
+    [Collection("playlists")]
     public class Playlist
     {
         [BsonId]
@@ -16,9 +16,14 @@ namespace IntTech_Controller_Backend.Models
         [BsonElement("games")]
         public List<PlaylistGame> Games { get; set; }
 
+        [BsonElement("ownerId")]
+        public ObjectId OwnerId { get; set; }
+
+        [BsonElement("isDefault")]
+        public bool IsDefault { get; set; } = false;
     }
 
-    public class PlaylistGame 
+    public class PlaylistGame
     {
         [BsonElement("gameId")]
         public string GameId { get; set; }

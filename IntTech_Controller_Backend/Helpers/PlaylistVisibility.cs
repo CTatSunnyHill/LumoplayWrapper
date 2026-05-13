@@ -25,12 +25,12 @@ public static class PlaylistVisibility
         ObjectId userId,
         IQueryable<Playlist> playlists)
     {
-        var playlistOidSet = playlistIds.Distinct().ToList();
-        if (playlistOidSet.Count == 0)
+        var distinctPlaylistIds = playlistIds.Distinct().ToList();
+        if (distinctPlaylistIds.Count == 0)
             return [];
 
         var visibleOids = await playlists
-            .Where(p => playlistOidSet.Contains(p.Id))
+            .Where(p => distinctPlaylistIds.Contains(p.Id))
             .Where(VisibleTo(userId))
             .Select(p => p.Id)
             .ToListAsync();

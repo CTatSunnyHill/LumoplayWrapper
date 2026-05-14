@@ -10,15 +10,15 @@ public class GameFileStorage
 
     public string? ValidateImageFile(IFormFile file)
     {
-        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf" };
         var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
 
         if (!allowedExtensions.Contains(extension))
             return $"Invalid file type '{extension}'. Allowed: {string.Join(", ", allowedExtensions)}";
 
-        const long maxFileSize = 5 * 1024 * 1024;
+        const long maxFileSize = 20 * 1024 * 1024;
         if (file.Length > maxFileSize)
-            return "File size exceeds the 5MB limit.";
+            return "File size exceeds the 20MB limit.";
 
         return null;
     }

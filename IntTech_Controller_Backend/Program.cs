@@ -102,6 +102,7 @@ app.UseCors("AllowAll");
 app.UseStaticFiles();
 
 app.UseAuthentication();
+app.UseMiddleware<SessionVersionMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();

@@ -35,8 +35,8 @@ namespace IntTech_Controller_Backend.Controllers
                 Id = u.Id.ToString(),
                 u.Username,
                 u.Role,
-                AllowedLocationsIds = u.AllowedLocationsIds.Select(id => id.ToString()).ToList(),
-                AllowedTagIds = u.AllowedTagIds.Select(id => id.ToString()).ToList()
+                AllowedLocationsIds = (u.AllowedLocationsIds ?? []).Select(id => id.ToString()).ToList(),
+                AllowedTagIds = (u.AllowedTagIds ?? []).Select(id => id.ToString()).ToList()
             });
 
             return Ok(users);

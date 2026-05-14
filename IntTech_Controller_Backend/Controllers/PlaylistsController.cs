@@ -83,7 +83,37 @@ public class PlaylistsController : ControllerBase
         if (!PlaylistVisibility.CanUserSee(playlist, userId))
             return NotFound();
 
-        return Ok(playlist);
+        var gameIdsToFetch = (playlist.Games ?? new List<PlaylistGame>())
+            .Select(g => g.GameId)
+            .Distinct()
+            .ToList();
+
+        var libraryGames = await _context.Games
+            .Where(g => gameIdsToFetch.Contains(g.GameId))
+            .ToListAsync();
+
+        var gamesById = libraryGames.ToDictionary(g => g.GameId);
+
+        var userRole = ClaimsHelper.GetUserRole(User);
+        var allowedTagIds = userRole != "Admin"
+            ? ClaimsHelper.GetAllowedTagIds(User).ToHashSet()
+            : new HashSet<ObjectId>();
+        var allTagsById = userRole != "Admin"
+            ? await _context.Tags.ToDictionaryAsync(t => t.Id)
+            : new Dictionary<ObjectId, Tag>();
+
+        return Ok(new PlaylistDTO
+        {
+            Id = playlist.Id,
+            Name = playlist.Name,
+            OwnerId = playlist.OwnerId,
+            IsDefault = playlist.IsDefault,
+            Games = (playlist.Games ?? new List<PlaylistGame>())
+                .Select(pg => gamesById.TryGetValue(pg.GameId, out var game) ? game : null)
+                .Where(g => g != null)
+                .Where(g => userRole == "Admin" || GameAccessHelper.IsGameVisibleToUser(g!, allowedTagIds, allTagsById))
+                .ToList()!
+        });
     }
 
     // POST: api/Playlists

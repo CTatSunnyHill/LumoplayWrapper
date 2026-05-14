@@ -64,7 +64,8 @@ using (var scope = app.Services.CreateScope())
             Username = "admin",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin"), // Default password, should be changed after first login
             Role = "Admin",
-            AllowedLocationsIds = new List<ObjectId> { }
+            AllowedLocationsIds = new List<ObjectId> { },
+            AllowedTagIds = new List<ObjectId> { }
         });
         db.SaveChanges();
         Console.WriteLine("Seeded default admin user: admin / admin");

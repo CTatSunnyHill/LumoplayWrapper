@@ -100,7 +100,7 @@ public class PlaylistsController : ControllerBase
             : new HashSet<ObjectId>();
         var allTagsById = userRole != "Admin"
             ? await _context.Tags.ToDictionaryAsync(t => t.Id)
-            : new Dictionary<ObjectId, Tag>();
+            : new Dictionary<ObjectId, Models.Tag>();
 
         return Ok(new PlaylistDTO
         {

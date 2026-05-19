@@ -212,8 +212,8 @@ public class CreateUserDto
     public string Username { get; set; }
     public string Password { get; set; }
     public string Role { get; set; }
-    public List<string> AllowedLocationsIds { get; set; }
-    public List<string> AllowedTagIds { get; set; }
+    public List<string> AllowedLocationsIds { get; set; } = new List<string>();
+    public List<string> AllowedTagIds { get; set; } = new List<string>();
 }
 
 public class UpdateUserDto

@@ -180,20 +180,30 @@ namespace IntTech_Controller_Backend.Controllers
 
             if (dto.AllowedLocationsIds != null)
             {
-                user.AllowedLocationsIds = dto.AllowedLocationsIds
+                var parsedAllowedLocationIds = dto.AllowedLocationsIds
                     .Where(s => ObjectId.TryParse(s, out _))
                     .Select(ObjectId.Parse)
                     .ToList();
-                changed = true;
+
+                if (!(user.AllowedLocationsIds ?? []).ToHashSet().SetEquals(parsedAllowedLocationIds))
+                {
+                    user.AllowedLocationsIds = parsedAllowedLocationIds;
+                    changed = true;
+                }
             }
 
             if (dto.AllowedTagIds != null)
             {
-                user.AllowedTagIds = dto.AllowedTagIds
+                var parsedAllowedTagIds = dto.AllowedTagIds
                     .Where(s => ObjectId.TryParse(s, out _))
                     .Select(ObjectId.Parse)
                     .ToList();
-                changed = true;
+
+                if (!(user.AllowedTagIds ?? []).ToHashSet().SetEquals(parsedAllowedTagIds))
+                {
+                    user.AllowedTagIds = parsedAllowedTagIds;
+                    changed = true;
+                }
             }
 
             if (changed)

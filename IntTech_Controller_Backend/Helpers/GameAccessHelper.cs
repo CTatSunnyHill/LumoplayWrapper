@@ -5,16 +5,30 @@ namespace IntTech_Controller_Backend.Helpers
 {
     public static class GameAccessHelper
     {
+        public static Dictionary<ObjectId, HashSet<ObjectId>> BuildAllowedTagsByCategory(
+            HashSet<ObjectId> allowedTagIds,
+            Dictionary<ObjectId, Tag> tagsById)
+        {
+            return allowedTagIds
+                .Where(tagsById.ContainsKey)
+                .GroupBy(tagId => tagsById[tagId].CategoryId)
+                .ToDictionary(g => g.Key, g => g.ToHashSet());
+        }
+
         public static bool IsGameVisibleToUser(
             Game game,
             HashSet<ObjectId> allowedTagIds,
             Dictionary<ObjectId, Tag> tagsById)
         {
-            var allowedTagsByCategory = allowedTagIds
-                .Where(tagsById.ContainsKey)
-                .GroupBy(tagId => tagsById[tagId].CategoryId)
-                .ToDictionary(g => g.Key, g => g.ToHashSet());
+            var allowedTagsByCategory = BuildAllowedTagsByCategory(allowedTagIds, tagsById);
+            return IsGameVisibleToUser(game, allowedTagsByCategory, tagsById);
+        }
 
+        public static bool IsGameVisibleToUser(
+            Game game,
+            Dictionary<ObjectId, HashSet<ObjectId>> allowedTagsByCategory,
+            Dictionary<ObjectId, Tag> tagsById)
+        {
             // No restrictions at all → see everything
             if (allowedTagsByCategory.Count == 0) return true;
 
@@ -44,7 +58,8 @@ namespace IntTech_Controller_Backend.Helpers
             Dictionary<ObjectId, Tag> tagsById)
         {
             if (userRole == "Admin") return games;
-            return games.Where(g => IsGameVisibleToUser(g, allowedTagIds, tagsById)).ToList();
+            var allowedTagsByCategory = BuildAllowedTagsByCategory(allowedTagIds, tagsById);
+            return games.Where(g => IsGameVisibleToUser(g, allowedTagsByCategory, tagsById)).ToList();
         }
     }
 }

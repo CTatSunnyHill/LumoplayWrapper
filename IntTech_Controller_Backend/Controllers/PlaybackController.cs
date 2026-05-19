@@ -38,7 +38,7 @@ public class PlaybackController : ControllerBase
 
         if (!User.IsInRole("Admin"))
         {
-            if (game == null) return NotFound($"No device found with IP: {ipAddress}");
+            if (game == null) return NotFound($"Game with ID '{gameId}' not found.");
             var allowedTagIds = ClaimsHelper.GetAllowedTagIds(User).ToHashSet();
             var allTagsById = await _context.Tags.ToDictionaryAsync(t => t.Id);
             if (!GameAccessHelper.IsGameVisibleToUser(game, allowedTagIds, allTagsById))

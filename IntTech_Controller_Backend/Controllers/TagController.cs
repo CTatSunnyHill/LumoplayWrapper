@@ -283,11 +283,12 @@ namespace IntTech_Controller_Backend.Controllers
                 return BadRequest(new { Message = "Cannot delete this tag because it is assigned to one or more games. Unassign it first." });
 
             var affectedUsers = await _context.Users
-                .Where(u => u.AllowedTagIds.Contains(oid))
+                .Where(u => u.AllowedTagIds != null && u.AllowedTagIds.Contains(oid))
                 .ToListAsync();
 
             foreach (var user in affectedUsers)
             {
+                user.AllowedTagIds ??= new List<ObjectId>();
                 user.AllowedTagIds.Remove(oid);
                 user.SessionVersion++;
             }

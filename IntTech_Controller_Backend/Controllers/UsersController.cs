@@ -35,7 +35,8 @@ namespace IntTech_Controller_Backend.Controllers
                 Id = u.Id.ToString(),
                 u.Username,
                 u.Role,
-                AllowedLocationsIds = u.AllowedLocationsIds.Select(id => id.ToString()).ToList()
+                AllowedLocationsIds = (u.AllowedLocationsIds ?? []).Select(id => id.ToString()).ToList(),
+                AllowedTagIds = (u.AllowedTagIds ?? []).Select(id => id.ToString()).ToList()
             });
 
             return Ok(users);
@@ -79,13 +80,26 @@ namespace IntTech_Controller_Backend.Controllers
 
             var locationIds = new List<ObjectId>();
 
-            if (dto.AllowedLocationsIds != null) 
+            if (dto.AllowedLocationsIds != null)
             {
                 foreach (var idStr in dto.AllowedLocationsIds)
                 {
-                    if (ObjectId.TryParse(idStr, out ObjectId oid)) 
-                    { 
+                    if (ObjectId.TryParse(idStr, out ObjectId oid))
+                    {
                         locationIds.Add(oid);
+                    }
+                }
+            }
+
+            var tagIds = new List<ObjectId>();
+
+            if (dto.AllowedTagIds != null)
+            {
+                foreach (var idStr in dto.AllowedTagIds)
+                {
+                    if (ObjectId.TryParse(idStr, out ObjectId oid))
+                    {
+                        tagIds.Add(oid);
                     }
                 }
             }
@@ -96,7 +110,9 @@ namespace IntTech_Controller_Backend.Controllers
                 Username = username,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
                 Role = role,
+                SessionVersion = 0,
                 AllowedLocationsIds = locationIds,
+                AllowedTagIds = tagIds,
             };
 
             _context.Users.Add(newUser);
@@ -138,6 +154,66 @@ namespace IntTech_Controller_Backend.Controllers
 
             return Ok(new { personalCount, defaultCount });
         }
+
+        // PUT: api/users/{id}
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateUser(string id, [FromBody] UpdateUserDto dto)
+        {
+            if (!ObjectId.TryParse(id, out ObjectId oid))
+                return BadRequest(new { Message = "Invalid ID" });
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == oid);
+            if (user == null) return NotFound(new { Message = "User not found" });
+
+            if (user.Username.ToLower() == "admin" && dto.Role != null && dto.Role != "Admin")
+                return BadRequest(new { Message = "Cannot change role of the master admin" });
+
+            var changed = false;
+
+            if (dto.Role != null && dto.Role != user.Role)
+            {
+                if (dto.Role != "Admin" && dto.Role != "User")
+                    return BadRequest(new { Message = "Invalid role" });
+                user.Role = dto.Role;
+                changed = true;
+            }
+
+            if (dto.AllowedLocationsIds != null)
+            {
+                var parsedAllowedLocationIds = dto.AllowedLocationsIds
+                    .Where(s => ObjectId.TryParse(s, out _))
+                    .Select(ObjectId.Parse)
+                    .ToList();
+
+                if (!(user.AllowedLocationsIds ?? []).ToHashSet().SetEquals(parsedAllowedLocationIds))
+                {
+                    user.AllowedLocationsIds = parsedAllowedLocationIds;
+                    changed = true;
+                }
+            }
+
+            if (dto.AllowedTagIds != null)
+            {
+                var parsedAllowedTagIds = dto.AllowedTagIds
+                    .Where(s => ObjectId.TryParse(s, out _))
+                    .Select(ObjectId.Parse)
+                    .ToList();
+
+                if (!(user.AllowedTagIds ?? []).ToHashSet().SetEquals(parsedAllowedTagIds))
+                {
+                    user.AllowedTagIds = parsedAllowedTagIds;
+                    changed = true;
+                }
+            }
+
+            if (changed)
+            {
+                user.SessionVersion++;
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(new { Message = "User updated", sessionVersion = user.SessionVersion });
+        }
     }
 }
 
@@ -146,5 +222,13 @@ public class CreateUserDto
     public string Username { get; set; }
     public string Password { get; set; }
     public string Role { get; set; }
-    public List<String> AllowedLocationsIds { get; set; }
+    public List<string> AllowedLocationsIds { get; set; } = new List<string>();
+    public List<string> AllowedTagIds { get; set; } = new List<string>();
+}
+
+public class UpdateUserDto
+{
+    public string? Role { get; set; }
+    public List<string>? AllowedLocationsIds { get; set; }
+    public List<string>? AllowedTagIds { get; set; }
 }

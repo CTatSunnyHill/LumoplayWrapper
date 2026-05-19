@@ -48,7 +48,11 @@ public class GamesController : ControllerBase
         var tagLookup = allTags.ToDictionary(t => t.Id);
         var categoryLookup = allCategories.ToDictionary(c => c.Id);
 
-        var response = games.Select(game =>
+        var userRole = ClaimsHelper.GetUserRole(User);
+        var allowedTagIds = ClaimsHelper.GetAllowedTagIds(User).ToHashSet();
+        var visibleGames = GameAccessHelper.FilterVisibleGames(games, userRole, allowedTagIds, tagLookup);
+
+        var response = visibleGames.Select(game =>
         {
             // Resolve tagIds to structured tag info
             var resolvedTags = (game.TagIds ?? new List<ObjectId>())
@@ -107,6 +111,14 @@ public class GamesController : ControllerBase
 
         var tagLookup = allTags.ToDictionary(t => t.Id);
         var categoryLookup = allCategories.ToDictionary(c => c.Id);
+
+        var userRole = ClaimsHelper.GetUserRole(User);
+        if (userRole != "Admin")
+        {
+            var allowedTagIds = ClaimsHelper.GetAllowedTagIds(User).ToHashSet();
+            if (!GameAccessHelper.IsGameVisibleToUser(game, allowedTagIds, tagLookup))
+                return NotFound($"Game with ID '{gameId}' not found.");
+        }
 
         var resolvedTags = (game.TagIds ?? new List<ObjectId>())
             .Where(id => tagLookup.ContainsKey(id))
@@ -268,21 +280,21 @@ public class GamesController : ControllerBase
             {
                 var sanitized = dto.OnePagerFileName.Trim();
                 var baseName = Path.GetFileName(sanitized);
-                
+
                 // Validate that the sanitized name matches the original (no path components)
                 if (!string.Equals(baseName, sanitized, StringComparison.Ordinal))
                 {
                     return BadRequest("OnePagerFileName must be a simple file name without path components.");
                 }
-                
+
                 // Validate file extension
                 var extension = Path.GetExtension(baseName).ToLowerInvariant();
-                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf" };
                 if (!allowedExtensions.Contains(extension))
                 {
                     return BadRequest($"OnePagerFileName has invalid extension '{extension}'. Allowed: {string.Join(", ", allowedExtensions)}");
                 }
-                
+
                 game.OnePagerFileName = baseName;
             }
         }
@@ -376,13 +388,13 @@ public class GamesController : ControllerBase
     {
         if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
 
-        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf" };
         var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
 
         if (!allowedExtensions.Contains(extension)) return BadRequest($"Invalid file type '{extension}'. Allowed: {string.Join(", ", allowedExtensions)}");
 
-        const long maxFileSize = 10 * 1024 * 1024; // 10 MB
-        if (file.Length > maxFileSize) return BadRequest($"File size exceeds the 10 MB limit.");
+        const long maxFileSize = 20 * 1024 * 1024; // 20 MB
+        if (file.Length > maxFileSize) return BadRequest($"File size exceeds the 20 MB limit.");
 
         var game = await _context.Games.FirstOrDefaultAsync(g => g.GameId == gameId);
         if (game == null) return NotFound($"Game with ID '{gameId}' not found.");

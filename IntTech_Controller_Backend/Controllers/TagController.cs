@@ -282,10 +282,25 @@ namespace IntTech_Controller_Backend.Controllers
             if (inUseByGame)
                 return BadRequest(new { Message = "Cannot delete this tag because it is assigned to one or more games. Unassign it first." });
 
+            var affectedUsers = await _context.Users
+                .Where(u => u.AllowedTagIds != null && u.AllowedTagIds.Contains(oid))
+                .ToListAsync();
+
+            foreach (var user in affectedUsers)
+            {
+                user.AllowedTagIds ??= new List<ObjectId>();
+                user.AllowedTagIds.Remove(oid);
+                user.SessionVersion++;
+            }
+
             _context.Tags.Remove(tag);
             await _context.SaveChangesAsync();
 
-            return Ok(new { Message = "Tag deleted" });
+            return Ok(new
+            {
+                Message = "Tag deleted",
+                usersAffected = affectedUsers.Count,
+            });
         }
 
         // ── Helpers ──

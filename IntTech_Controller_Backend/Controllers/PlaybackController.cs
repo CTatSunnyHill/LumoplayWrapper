@@ -36,6 +36,15 @@ public class PlaybackController : ControllerBase
             return BadRequest(new { Message = "Only LUMOplay games can be played on devices." });
         }
 
+        if (!User.IsInRole("Admin"))
+        {
+            if (game == null) return NotFound($"Game with ID '{gameId}' not found.");
+            var allowedTagIds = ClaimsHelper.GetAllowedTagIds(User).ToHashSet();
+            var allTagsById = await _context.Tags.ToDictionaryAsync(t => t.Id);
+            if (!GameAccessHelper.IsGameVisibleToUser(game, allowedTagIds, allTagsById))
+                return Forbid();
+        }
+
         var device = await _context.Devices
             .FirstOrDefaultAsync(d => d.IpAddress == ipAddress);
 
@@ -205,6 +214,16 @@ public class PlaybackController : ControllerBase
         // 3. Determine the first game to play
         var firstGameId = playlist.Games.First().GameId;
 
+        if (!User.IsInRole("Admin"))
+        {
+            var firstGame = await _context.Games.FirstOrDefaultAsync(g => g.GameId == firstGameId);
+            if (firstGame == null) return NotFound();
+            var allowedTagIds = ClaimsHelper.GetAllowedTagIds(User).ToHashSet();
+            var allTagsById = await _context.Tags.ToDictionaryAsync(t => t.Id);
+            if (!GameAccessHelper.IsGameVisibleToUser(firstGame, allowedTagIds, allTagsById))
+                return Forbid();
+        }
+
         // 4. Send Command to Device
         var result = await _commandService.ExecuteCommand(
             device.IpAddress,
@@ -282,6 +301,16 @@ public class PlaybackController : ControllerBase
 
         var nextGame = playlist.Games[newIndex];
 
+        if (!User.IsInRole("Admin"))
+        {
+            var nextGameFull = await _context.Games.FirstOrDefaultAsync(g => g.GameId == nextGame.GameId);
+            if (nextGameFull == null) return NotFound();
+            var allowedTagIds = ClaimsHelper.GetAllowedTagIds(User).ToHashSet();
+            var allTagsById = await _context.Tags.ToDictionaryAsync(t => t.Id);
+            if (!GameAccessHelper.IsGameVisibleToUser(nextGameFull, allowedTagIds, allTagsById))
+                return Forbid();
+        }
+
         // 4. Send Command
         var result = await _commandService.ExecuteCommand(
             device.IpAddress,
@@ -357,6 +386,16 @@ public class PlaybackController : ControllerBase
         }
 
         var prevGame = playlist.Games[newIndex];
+
+        if (!User.IsInRole("Admin"))
+        {
+            var prevGameFull = await _context.Games.FirstOrDefaultAsync(g => g.GameId == prevGame.GameId);
+            if (prevGameFull == null) return NotFound();
+            var allowedTagIds = ClaimsHelper.GetAllowedTagIds(User).ToHashSet();
+            var allTagsById = await _context.Tags.ToDictionaryAsync(t => t.Id);
+            if (!GameAccessHelper.IsGameVisibleToUser(prevGameFull, allowedTagIds, allTagsById))
+                return Forbid();
+        }
 
         // 4. Send Command
         var result = await _commandService.ExecuteCommand(

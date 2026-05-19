@@ -41,4 +41,31 @@ public static class ClaimsHelper
             .Select(ObjectId.Parse)
             .ToList();
     }
+
+    public static List<ObjectId> GetAllowedTagIds(ClaimsPrincipal user)
+    {
+        var tagsClaim = user.FindFirstValue("AllowedTagIds");
+        List<string> allowedTagIdsStr;
+
+        if (string.IsNullOrEmpty(tagsClaim))
+        {
+            allowedTagIdsStr = new List<string>();
+        }
+        else
+        {
+            try
+            {
+                allowedTagIdsStr = JsonSerializer.Deserialize<List<string>>(tagsClaim) ?? new List<string>();
+            }
+            catch (JsonException)
+            {
+                allowedTagIdsStr = new List<string>();
+            }
+        }
+
+        return allowedTagIdsStr
+            .Where(idStr => ObjectId.TryParse(idStr, out _))
+            .Select(ObjectId.Parse)
+            .ToList();
+    }
 }

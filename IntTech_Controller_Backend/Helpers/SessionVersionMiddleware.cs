@@ -19,22 +19,29 @@ public class SessionVersionMiddleware(RequestDelegate next)
             var userIdStr = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
             var sessionVersionStr = context.User.FindFirstValue("SessionVersion");
 
-            if (ObjectId.TryParse(userIdStr, out var userId) &&
-                int.TryParse(sessionVersionStr, out var jwtVersion))
+            if (!ObjectId.TryParse(userIdStr, out var userId) ||
+                !int.TryParse(sessionVersionStr, out var jwtVersion))
             {
-                var user = await db.Users
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(u => u.Id == userId);
-
-                if (user != null && user.SessionVersion != jwtVersion)
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsJsonAsync(new
                 {
-                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    await context.Response.WriteAsJsonAsync(new
-                    {
-                        message = "Session expired. Please log in again."
-                    });
-                    return;
-                }
+                    message = "Session expired. Please log in again."
+                });
+                return;
+            }
+
+            var user = await db.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user != null && user.SessionVersion != jwtVersion)
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsJsonAsync(new
+                {
+                    message = "Session expired. Please log in again."
+                });
+                return;
             }
         }
 

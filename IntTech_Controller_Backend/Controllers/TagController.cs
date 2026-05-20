@@ -283,10 +283,12 @@ namespace IntTech_Controller_Backend.Controllers
                 orderedOids.Add(oid);
             }
 
-            var allTags = await _context.Tags.ToListAsync();
-            var eligibleById = allTags
-                .Where(t => t.CategoryId == categoryOid && t.ParentTagId == null)
-                .ToDictionary(t => t.Id);
+            var eligibleTags = await _context.Tags
+                .Where(t => t.CategoryId == categoryOid
+                    && t.ParentTagId == null
+                    && orderedOids.Contains(t.Id))
+                .ToListAsync();
+            var eligibleById = eligibleTags.ToDictionary(t => t.Id);
 
             for (int i = 0; i < orderedOids.Count; i++)
             {

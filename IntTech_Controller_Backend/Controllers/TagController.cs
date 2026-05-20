@@ -275,31 +275,76 @@ namespace IntTech_Controller_Backend.Controllers
             var categoryExists = await _context.Categories.AnyAsync(c => c.Id == categoryOid);
             if (!categoryExists) return NotFound(new { Message = "Category not found" });
 
-            var orderedOids = new List<ObjectId>(tagIds.Count);
+            var invalidIds = new List<string>();
+            var duplicateIds = new List<string>();
+            var parsedIds = new List<(string Id, ObjectId Oid)>(tagIds.Count);
+            var seenIds = new HashSet<ObjectId>();
+
             foreach (var id in tagIds)
             {
                 if (!ObjectId.TryParse(id, out var oid))
-                    return BadRequest(new { Message = $"Invalid tag ID format: {id}" });
-                orderedOids.Add(oid);
+                {
+                    invalidIds.Add(id);
+                    continue;
+                }
+
+                if (!seenIds.Add(oid))
+                {
+                    duplicateIds.Add(id);
+                    continue;
+                }
+
+                parsedIds.Add((id, oid));
             }
 
+            if (invalidIds.Count > 0)
+            {
+                return BadRequest(new
+                {
+                    Message = "One or more tag IDs have an invalid format",
+                    InvalidIds = invalidIds
+                });
+            }
+
+            if (duplicateIds.Count > 0)
+            {
+                return BadRequest(new
+                {
+                    Message = "One or more tag IDs were duplicated",
+                    InvalidIds = duplicateIds
+                });
+            }
+
+            var requestedIds = parsedIds.Select(x => x.Oid).ToList();
             var eligibleTags = await _context.Tags
                 .Where(t => t.CategoryId == categoryOid
                     && t.ParentTagId == null
-                    && orderedOids.Contains(t.Id))
+                    && requestedIds.Contains(t.Id))
                 .ToListAsync();
             var eligibleById = eligibleTags.ToDictionary(t => t.Id);
 
-            for (int i = 0; i < orderedOids.Count; i++)
+            var missingIds = parsedIds
+                .Where(x => !eligibleById.ContainsKey(x.Oid))
+                .Select(x => x.Id)
+                .Distinct()
+                .ToList();
+
+            if (missingIds.Count > 0)
             {
-                if (eligibleById.TryGetValue(orderedOids[i], out var tag))
+                return BadRequest(new
                 {
-                    tag.DisplayOrder = i;
-                }
+                    Message = "One or more tags were not found",
+                    MissingIds = missingIds
+                });
+            }
+
+            for (int i = 0; i < requestedIds.Count; i++)
+            {
+                eligibleById[requestedIds[i]].DisplayOrder = i;
             }
 
             await _context.SaveChangesAsync();
-            return Ok(new { Message = "Tag order updated", Count = orderedOids.Count });
+            return Ok(new { Message = "Tag order updated", Count = requestedIds.Count });
         }
 
         // DELETE: api/Tag/{id}

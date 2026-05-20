@@ -108,6 +108,38 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(category);
         }
 
+        // PUT: api/Category/reorder
+        // Body: ["categoryId1", "categoryId2", ...] in the new desired order.
+        // Assigns DisplayOrder = list index for each matched category.
+        [HttpPut("reorder")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ReorderCategories([FromBody] List<string> categoryIds)
+        {
+            if (categoryIds == null) return BadRequest(new { Message = "Category ID list is required." });
+
+            var orderedOids = new List<ObjectId>(categoryIds.Count);
+            foreach (var id in categoryIds)
+            {
+                if (!ObjectId.TryParse(id, out var oid))
+                    return BadRequest(new { Message = $"Invalid category ID format: {id}" });
+                orderedOids.Add(oid);
+            }
+
+            var categories = await _context.Categories.ToListAsync();
+            var byId = categories.ToDictionary(c => c.Id);
+
+            for (int i = 0; i < orderedOids.Count; i++)
+            {
+                if (byId.TryGetValue(orderedOids[i], out var category))
+                {
+                    category.DisplayOrder = i;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { Message = "Category order updated", Count = orderedOids.Count });
+        }
+
         // DELETE: api/Category/{id}
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]

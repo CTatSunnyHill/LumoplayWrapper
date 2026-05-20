@@ -260,6 +260,46 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(new { Message = "Tag updated successfully" });
         }
 
+        // PUT: api/Tag/category/{categoryId}/reorder
+        // Body: ["tagId1", "tagId2", ...] in the new desired order.
+        // Reorders only top-level tags (ParentTagId == null) belonging to the
+        // given category. Assigns DisplayOrder = list index for each match.
+        [HttpPut("category/{categoryId}/reorder")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ReorderTags(string categoryId, [FromBody] List<string> tagIds)
+        {
+            if (tagIds == null) return BadRequest(new { Message = "Tag ID list is required." });
+            if (!ObjectId.TryParse(categoryId, out ObjectId categoryOid))
+                return BadRequest("Invalid category ID format.");
+
+            var categoryExists = await _context.Categories.AnyAsync(c => c.Id == categoryOid);
+            if (!categoryExists) return NotFound(new { Message = "Category not found" });
+
+            var orderedOids = new List<ObjectId>(tagIds.Count);
+            foreach (var id in tagIds)
+            {
+                if (!ObjectId.TryParse(id, out var oid))
+                    return BadRequest(new { Message = $"Invalid tag ID format: {id}" });
+                orderedOids.Add(oid);
+            }
+
+            var allTags = await _context.Tags.ToListAsync();
+            var eligibleById = allTags
+                .Where(t => t.CategoryId == categoryOid && t.ParentTagId == null)
+                .ToDictionary(t => t.Id);
+
+            for (int i = 0; i < orderedOids.Count; i++)
+            {
+                if (eligibleById.TryGetValue(orderedOids[i], out var tag))
+                {
+                    tag.DisplayOrder = i;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { Message = "Tag order updated", Count = orderedOids.Count });
+        }
+
         // DELETE: api/Tag/{id}
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]

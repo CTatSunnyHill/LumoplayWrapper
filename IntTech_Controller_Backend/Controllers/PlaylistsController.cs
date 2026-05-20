@@ -22,7 +22,7 @@ public class PlaylistsController : ControllerBase
     }
 
     // GET: api/Playlists
-    // Returns caller's own playlists + all default playlists, with hydrated game objects.
+    // Returns caller's own playlists + all default playlists, with hydrated game objects and resolved tags.
     [HttpGet]
     public async Task<IActionResult> GetPlaylists()
     {
@@ -48,21 +48,26 @@ public class PlaylistsController : ControllerBase
         var allowedTagIds = userRole != "Admin"
             ? ClaimsHelper.GetAllowedTagIds(User).ToHashSet()
             : new HashSet<ObjectId>();
-        var allTagsById = userRole != "Admin"
-            ? await _context.Tags.ToDictionaryAsync(t => t.Id)
+
+        var allTagsById = await _context.Tags.ToDictionaryAsync(t => t.Id);
+        var allCategoriesById = await _context.Categories.ToDictionaryAsync(c => c.Id);
+
+        var visibilityTagsById = userRole != "Admin"
+            ? allTagsById
             : new Dictionary<ObjectId, Models.Tag>();
 
-        var response = playlists.Select(p => new PlaylistDTO
+        var response = playlists.Select(p => new
         {
-            Id = p.Id,
-            Name = p.Name,
-            OwnerId = p.OwnerId,
-            IsDefault = p.IsDefault,
+            Id = p.Id.ToString(),
+            p.Name,
+            OwnerId = p.OwnerId.ToString(),
+            p.IsDefault,
             Games = (p.Games ?? new List<PlaylistGame>())
                 .Select(pg => gamesById.TryGetValue(pg.GameId, out var game) ? game : null)
                 .Where(g => g != null)
-                .Where(g => userRole == "Admin" || GameAccessHelper.IsGameVisibleToUser(g!, allowedTagIds, allTagsById))
-                .ToList()!
+                .Where(g => userRole == "Admin" || GameAccessHelper.IsGameVisibleToUser(g!, allowedTagIds, visibilityTagsById))
+                .Select(g => ResolveGameResponse(g!, allTagsById, allCategoriesById))
+                .ToList()
         });
 
         return Ok(response);
@@ -98,21 +103,26 @@ public class PlaylistsController : ControllerBase
         var allowedTagIds = userRole != "Admin"
             ? ClaimsHelper.GetAllowedTagIds(User).ToHashSet()
             : new HashSet<ObjectId>();
-        var allTagsById = userRole != "Admin"
-            ? await _context.Tags.ToDictionaryAsync(t => t.Id)
+
+        var allTagsById = await _context.Tags.ToDictionaryAsync(t => t.Id);
+        var allCategoriesById = await _context.Categories.ToDictionaryAsync(c => c.Id);
+
+        var visibilityTagsById = userRole != "Admin"
+            ? allTagsById
             : new Dictionary<ObjectId, Models.Tag>();
 
-        return Ok(new PlaylistDTO
+        return Ok(new
         {
-            Id = playlist.Id,
-            Name = playlist.Name,
-            OwnerId = playlist.OwnerId,
-            IsDefault = playlist.IsDefault,
+            Id = playlist.Id.ToString(),
+            playlist.Name,
+            OwnerId = playlist.OwnerId.ToString(),
+            playlist.IsDefault,
             Games = (playlist.Games ?? new List<PlaylistGame>())
                 .Select(pg => gamesById.TryGetValue(pg.GameId, out var game) ? game : null)
                 .Where(g => g != null)
-                .Where(g => userRole == "Admin" || GameAccessHelper.IsGameVisibleToUser(g!, allowedTagIds, allTagsById))
-                .ToList()!
+                .Where(g => userRole == "Admin" || GameAccessHelper.IsGameVisibleToUser(g!, allowedTagIds, visibilityTagsById))
+                .Select(g => ResolveGameResponse(g!, allTagsById, allCategoriesById))
+                .ToList()
         });
     }
 
@@ -253,13 +263,16 @@ public class PlaylistsController : ControllerBase
             .Where(g => gameIds.Contains(g.GameId))
             .ToListAsync();
 
-        var playlistDto = new PlaylistDTO
+        var allTagsById = await _context.Tags.ToDictionaryAsync(t => t.Id);
+        var allCategoriesById = await _context.Categories.ToDictionaryAsync(c => c.Id);
+
+        var playlistDto = new
         {
-            Id = clone.Id,
-            Name = clone.Name,
-            OwnerId = clone.OwnerId,
-            IsDefault = clone.IsDefault,
-            Games = games
+            Id = clone.Id.ToString(),
+            clone.Name,
+            OwnerId = clone.OwnerId.ToString(),
+            clone.IsDefault,
+            Games = games.Select(g => ResolveGameResponse(g, allTagsById, allCategoriesById)).ToList()
         };
 
         return CreatedAtAction(nameof(GetPlaylistById), new { id = clone.Id.ToString() }, playlistDto);
@@ -345,6 +358,51 @@ public class PlaylistsController : ControllerBase
 
         await _context.SaveChangesAsync();
         return Ok(new { Message = $"Order updated for playlist '{playlist.Name}'", GameCount = playlist.Games.Count });
+    }
+
+    private static object ResolveGameResponse(
+        Game game,
+        Dictionary<ObjectId, Models.Tag> tagsById,
+        Dictionary<ObjectId, Category> categoriesById)
+    {
+        var resolvedTags = (game.TagIds ?? new List<ObjectId>())
+            .Where(id => tagsById.ContainsKey(id))
+            .Select(id => tagsById[id])
+            .OrderBy(tag => categoriesById.ContainsKey(tag.CategoryId)
+                ? categoriesById[tag.CategoryId].DisplayOrder
+                : int.MaxValue)
+            .ThenBy(tag => tag.DisplayOrder)
+            .ThenBy(tag => tag.Name)
+            .Select(tag =>
+            {
+                var cat = categoriesById.ContainsKey(tag.CategoryId)
+                    ? categoriesById[tag.CategoryId]
+                    : null;
+                return new
+                {
+                    Id = tag.Id.ToString(),
+                    tag.Name,
+                    tag.Slug,
+                    tag.ColorHex,
+                    CategoryId = tag.CategoryId.ToString(),
+                    CategoryName = cat?.Name ?? "Unknown",
+                    CategorySlug = cat?.Slug ?? "unknown",
+                    ParentTagId = tag.ParentTagId?.ToString()
+                };
+            })
+            .ToList();
+
+        return new
+        {
+            Id = game.Id.ToString(),
+            game.GameId,
+            game.Name,
+            game.ImageFileName,
+            game.Description,
+            game.Platform,
+            game.OnePagerFileName,
+            Tags = resolvedTags
+        };
     }
 
     private static bool IsDuplicateKeyError(Exception ex)

@@ -108,6 +108,81 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(category);
         }
 
+        // PUT: api/Category/reorder
+        // Body: ["categoryId1", "categoryId2", ...] in the new desired order.
+        // Assigns DisplayOrder = list index for each requested category after validating the request.
+        [HttpPut("reorder")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ReorderCategories([FromBody] List<string> categoryIds)
+        {
+            if (categoryIds == null || categoryIds.Count == 0)
+                return BadRequest(new { Message = "Category ID list is required." });
+
+            var orderedOids = new List<ObjectId>(categoryIds.Count);
+            var invalidIds = new List<string>();
+            var duplicateIds = new List<string>();
+            var seenOids = new HashSet<ObjectId>();
+
+            foreach (var id in categoryIds)
+            {
+                if (!ObjectId.TryParse(id, out var oid))
+                {
+                    invalidIds.Add(id);
+                    continue;
+                }
+
+                if (!seenOids.Add(oid))
+                {
+                    duplicateIds.Add(id);
+                    continue;
+                }
+
+                orderedOids.Add(oid);
+            }
+
+            if (invalidIds.Count > 0 || duplicateIds.Count > 0)
+            {
+                return BadRequest(new
+                {
+                    Message = "One or more category IDs are invalid or duplicated.",
+                    InvalidIds = invalidIds,
+                    DuplicateIds = duplicateIds
+                });
+            }
+
+            var categories = await _context.Categories
+                .Where(c => orderedOids.Contains(c.Id))
+                .ToListAsync();
+
+            var byId = categories.ToDictionary(c => c.Id);
+            var missingIds = new List<string>();
+
+            foreach (var oid in orderedOids)
+            {
+                if (!byId.ContainsKey(oid))
+                {
+                    missingIds.Add(oid.ToString());
+                }
+            }
+
+            if (missingIds.Count > 0)
+            {
+                return BadRequest(new
+                {
+                    Message = "One or more category IDs were not found.",
+                    MissingIds = missingIds
+                });
+            }
+
+            for (int i = 0; i < orderedOids.Count; i++)
+            {
+                byId[orderedOids[i]].DisplayOrder = i;
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { Message = "Category order updated", Count = categories.Count });
+        }
+
         // DELETE: api/Category/{id}
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]

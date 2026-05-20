@@ -260,6 +260,93 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(new { Message = "Tag updated successfully" });
         }
 
+        // PUT: api/Tag/category/{categoryId}/reorder
+        // Body: ["tagId1", "tagId2", ...] in the new desired order.
+        // Reorders only top-level tags (ParentTagId == null) belonging to the
+        // given category. Assigns DisplayOrder = list index for each match.
+        [HttpPut("category/{categoryId}/reorder")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ReorderTags(string categoryId, [FromBody] List<string> tagIds)
+        {
+            if (tagIds == null) return BadRequest(new { Message = "Tag ID list is required." });
+            if (!ObjectId.TryParse(categoryId, out ObjectId categoryOid))
+                return BadRequest("Invalid category ID format.");
+
+            var categoryExists = await _context.Categories.AnyAsync(c => c.Id == categoryOid);
+            if (!categoryExists) return NotFound(new { Message = "Category not found" });
+
+            var invalidIds = new List<string>();
+            var duplicateIds = new List<string>();
+            var parsedIds = new List<(string Id, ObjectId Oid)>(tagIds.Count);
+            var seenIds = new HashSet<ObjectId>();
+
+            foreach (var id in tagIds)
+            {
+                if (!ObjectId.TryParse(id, out var oid))
+                {
+                    invalidIds.Add(id);
+                    continue;
+                }
+
+                if (!seenIds.Add(oid))
+                {
+                    duplicateIds.Add(id);
+                    continue;
+                }
+
+                parsedIds.Add((id, oid));
+            }
+
+            if (invalidIds.Count > 0)
+            {
+                return BadRequest(new
+                {
+                    Message = "One or more tag IDs have an invalid format",
+                    InvalidIds = invalidIds
+                });
+            }
+
+            if (duplicateIds.Count > 0)
+            {
+                return BadRequest(new
+                {
+                    Message = "One or more tag IDs were duplicated",
+                    InvalidIds = duplicateIds
+                });
+            }
+
+            var requestedIds = parsedIds.Select(x => x.Oid).ToList();
+            var eligibleTags = await _context.Tags
+                .Where(t => t.CategoryId == categoryOid
+                    && t.ParentTagId == null
+                    && requestedIds.Contains(t.Id))
+                .ToListAsync();
+            var eligibleById = eligibleTags.ToDictionary(t => t.Id);
+
+            var missingIds = parsedIds
+                .Where(x => !eligibleById.ContainsKey(x.Oid))
+                .Select(x => x.Id)
+                .Distinct()
+                .ToList();
+
+            if (missingIds.Count > 0)
+            {
+                return BadRequest(new
+                {
+                    Message = "One or more tags were not found",
+                    MissingIds = missingIds
+                });
+            }
+
+            for (int i = 0; i < requestedIds.Count; i++)
+            {
+                eligibleById[requestedIds[i]].DisplayOrder = i;
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { Message = "Tag order updated", Count = requestedIds.Count });
+        }
+
         // DELETE: api/Tag/{id}
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]

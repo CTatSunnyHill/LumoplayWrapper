@@ -54,12 +54,17 @@ public class GamesController : ControllerBase
 
         var response = visibleGames.Select(game =>
         {
-            // Resolve tagIds to structured tag info
+            // Resolve tagIds to structured tag info, sorted by category and tag display order
             var resolvedTags = (game.TagIds ?? new List<ObjectId>())
                 .Where(id => tagLookup.ContainsKey(id))
-                .Select(id =>
+                .Select(id => tagLookup[id])
+                .OrderBy(tag => categoryLookup.ContainsKey(tag.CategoryId)
+                    ? categoryLookup[tag.CategoryId].DisplayOrder
+                    : int.MaxValue)
+                .ThenBy(tag => tag.DisplayOrder)
+                .ThenBy(tag => tag.Name)
+                .Select(tag =>
                 {
-                    var tag = tagLookup[id];
                     var cat = categoryLookup.ContainsKey(tag.CategoryId)
                         ? categoryLookup[tag.CategoryId]
                         : null;
@@ -122,9 +127,14 @@ public class GamesController : ControllerBase
 
         var resolvedTags = (game.TagIds ?? new List<ObjectId>())
             .Where(id => tagLookup.ContainsKey(id))
-            .Select(id =>
+            .Select(id => tagLookup[id])
+            .OrderBy(tag => categoryLookup.ContainsKey(tag.CategoryId)
+                ? categoryLookup[tag.CategoryId].DisplayOrder
+                : int.MaxValue)
+            .ThenBy(tag => tag.DisplayOrder)
+            .ThenBy(tag => tag.Name)
+            .Select(tag =>
             {
-                var tag = tagLookup[id];
                 var cat = categoryLookup.ContainsKey(tag.CategoryId)
                     ? categoryLookup[tag.CategoryId]
                     : null;
@@ -447,11 +457,15 @@ public class GamesController : ControllerBase
         var tagLookup = allTags.ToDictionary(t => t.Id);
         var categoryLookup = allCategories.ToDictionary(c => c.Id);
 
-        // Resolve each tagId to its full info, grouped by category
+        // Resolve each tagId to its full info, grouped by category.
+        // Categories ordered by DisplayOrder; tags within each by DisplayOrder/Name.
         var tagsByCategory = (game.TagIds ?? Enumerable.Empty<ObjectId>())
             .Where(id => tagLookup.ContainsKey(id))
             .Select(id => tagLookup[id])
             .GroupBy(t => t.CategoryId)
+            .OrderBy(g => categoryLookup.ContainsKey(g.Key)
+                ? categoryLookup[g.Key].DisplayOrder
+                : int.MaxValue)
             .Select(group =>
             {
                 var category = categoryLookup.ContainsKey(group.Key)
@@ -462,14 +476,18 @@ public class GamesController : ControllerBase
                 {
                     CategoryId = group.Key.ToString(),
                     CategoryName = category?.Name ?? "Unknown",
-                    Tags = group.Select(t => new
-                    {
-                        Id = t.Id.ToString(),
-                        t.Name,
-                        t.Slug,
-                        t.ColorHex,
-                        ParentTagId = t.ParentTagId?.ToString()
-                    }).ToList()
+                    Tags = group
+                        .OrderBy(t => t.DisplayOrder)
+                        .ThenBy(t => t.Name)
+                        .Select(t => new
+                        {
+                            Id = t.Id.ToString(),
+                            t.Name,
+                            t.Slug,
+                            t.ColorHex,
+                            ParentTagId = t.ParentTagId?.ToString()
+                        })
+                        .ToList()
                 };
             })
             .ToList();
@@ -506,16 +524,23 @@ public class GamesController : ControllerBase
         game.TagIds = validTagIds;
         await _context.SaveChangesAsync();
 
-        // Return the resolved tag info for immediate UI use
+        // Return the resolved tag info for immediate UI use, sorted by category and tag display order
+        var categoryLookup = await _context.Categories.ToDictionaryAsync(c => c.Id);
         var resolvedTags = validTagIds
             .Where(id => allTags.ContainsKey(id))
-            .Select(id => new
+            .Select(id => allTags[id])
+            .OrderBy(tag => categoryLookup.ContainsKey(tag.CategoryId)
+                ? categoryLookup[tag.CategoryId].DisplayOrder
+                : int.MaxValue)
+            .ThenBy(tag => tag.DisplayOrder)
+            .ThenBy(tag => tag.Name)
+            .Select(tag => new
             {
-                Id = id.ToString(),
-                allTags[id].Name,
-                allTags[id].Slug,
-                CategoryId = allTags[id].CategoryId.ToString(),
-                allTags[id].ColorHex
+                Id = tag.Id.ToString(),
+                tag.Name,
+                tag.Slug,
+                CategoryId = tag.CategoryId.ToString(),
+                tag.ColorHex
             })
             .ToList();
 

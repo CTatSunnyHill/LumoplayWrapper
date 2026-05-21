@@ -293,8 +293,8 @@ public class PlaylistsController : ControllerBase
         var game = await _context.Games.FirstOrDefaultAsync(g => g.GameId == gameId);
         if (game == null) return NotFound("Game ID not found");
 
-        if ((game.Platform ?? PlatformTypes.LumoPlay) != PlatformTypes.LumoPlay)
-            return BadRequest(new { Message = "Only LUMOplay games can be added to playlists." });
+        // Cross-platform playlists: any platform may be added. Only the playlist skip/launch
+        // logic in PlaybackController gates on platform == "lumoplay".
 
         var userRole = ClaimsHelper.GetUserRole(User);
         if (userRole != "Admin")

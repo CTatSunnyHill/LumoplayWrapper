@@ -211,8 +211,19 @@ public class PlaybackController : ControllerBase
         if (playlist == null) return NotFound($"Playlist not found: {playlistId}");
         if (playlist.Games == null || !playlist.Games.Any()) return BadRequest("Playlist is empty.");
 
-        // 3. Determine the first game to play
-        var firstGameId = playlist.Games.First().GameId;
+        // 3. Determine the first launchable (lumoplay) game in the playlist, skipping any non-lumo entries.
+        var found = await FindLaunchableAsync(playlist, startIndex: 0, direction: +1);
+        if (found == null)
+        {
+            return BadRequest(new
+            {
+                Status = "NoLaunchableGames",
+                Message = "This playlist has no LumoPlay games to launch."
+            });
+        }
+
+        var (firstIndex, firstPlaylistGame) = found.Value;
+        var firstGameId = firstPlaylistGame.GameId;
 
         if (!User.IsInRole("Admin"))
         {
@@ -246,7 +257,7 @@ public class PlaybackController : ControllerBase
         ActivePlaylistState devicePlaylist = new ActivePlaylistState();
         // Store the ObjectId directly
         devicePlaylist.PlaylistId = playlist.Id;
-        devicePlaylist.CurrentIndex = 0;
+        devicePlaylist.CurrentIndex = firstIndex;
         devicePlaylist.StartedAt = DateTime.UtcNow;
 
         device.ActivePlaylist = devicePlaylist;
@@ -292,14 +303,22 @@ public class PlaybackController : ControllerBase
         if (playlist == null || playlist.Games == null || !playlist.Games.Any())
             return BadRequest("The active playlist data is missing or empty.");
 
-        // 3. Calculate New Index
-        int newIndex = device.ActivePlaylist.CurrentIndex + 1;
-        if (newIndex >= playlist.Games.Count)
+        // 3. Find the next launchable (lumoplay) game, skipping any non-lumo entries.
+        var found = await FindLaunchableAsync(
+            playlist,
+            startIndex: device.ActivePlaylist.CurrentIndex + 1,
+            direction: +1);
+
+        if (found == null)
         {
-            newIndex = 0;
+            return BadRequest(new
+            {
+                Status = "NoLaunchableGames",
+                Message = "This playlist has no LumoPlay games to skip to."
+            });
         }
 
-        var nextGame = playlist.Games[newIndex];
+        var (newIndex, nextGame) = found.Value;
 
         if (!User.IsInRole("Admin"))
         {
@@ -378,14 +397,22 @@ public class PlaybackController : ControllerBase
         if (playlist == null || playlist.Games == null || !playlist.Games.Any())
             return BadRequest("The active playlist data is missing or empty.");
 
-        // 3. Calculate New Index
-        int newIndex = device.ActivePlaylist.CurrentIndex - 1;
-        if (newIndex < 0)
+        // 3. Find the previous launchable (lumoplay) game, skipping any non-lumo entries.
+        var found = await FindLaunchableAsync(
+            playlist,
+            startIndex: device.ActivePlaylist.CurrentIndex - 1,
+            direction: -1);
+
+        if (found == null)
         {
-            newIndex = playlist.Games.Count - 1;
+            return BadRequest(new
+            {
+                Status = "NoLaunchableGames",
+                Message = "This playlist has no LumoPlay games to skip to."
+            });
         }
 
-        var prevGame = playlist.Games[newIndex];
+        var (newIndex, prevGame) = found.Value;
 
         if (!User.IsInRole("Admin"))
         {
@@ -426,5 +453,44 @@ public class PlaybackController : ControllerBase
             Index = newIndex,
             gameId = prevGame.GameId
         });
+    }
+
+    // Walks the playlist in the given direction from startIndex and returns the
+    // first index whose game is platform == "lumoplay". Returns null if the playlist
+    // contains no launchable games.
+    //
+    // direction == +1 for next, -1 for previous, 0 (treated as +1) for "first launchable from here".
+    // startIndex may be negative or >= Count; it is normalized.
+    private async Task<(int Index, PlaylistGame Game)?> FindLaunchableAsync(
+        Playlist playlist, int startIndex, int direction)
+    {
+        if (playlist.Games == null || playlist.Games.Count == 0) return null;
+
+        int step = direction < 0 ? -1 : 1;
+        int count = playlist.Games.Count;
+
+        var gameIds = playlist.Games.Select(g => g.GameId).Distinct().ToList();
+        var gamePlatforms = await _context.Games
+            .Where(g => gameIds.Contains(g.GameId))
+            .Select(g => new { g.GameId, g.Platform })
+            .ToListAsync();
+        var platformByGameId = gamePlatforms.ToDictionary(
+            g => g.GameId,
+            g => g.Platform ?? PlatformTypes.LumoPlay);
+
+        // Normalize startIndex into [0, count)
+        int idx = ((startIndex % count) + count) % count;
+        for (int i = 0; i < count; i++)
+        {
+            var candidate = playlist.Games[idx];
+            if (platformByGameId.TryGetValue(candidate.GameId, out var platform)
+                && platform == PlatformTypes.LumoPlay)
+            {
+                return (idx, candidate);
+            }
+            idx = ((idx + step) % count + count) % count;
+        }
+
+        return null;
     }
 }

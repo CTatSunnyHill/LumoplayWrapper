@@ -29,6 +29,9 @@ namespace IntTech_Controller_Backend.Models
         [BsonElement("colorHex")]
         public string? ColorHex { get; set; }
 
+        [BsonElement("isVisible")]
+        public bool IsVisible { get; set; } = true;
+
         [BsonElement("createdAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }

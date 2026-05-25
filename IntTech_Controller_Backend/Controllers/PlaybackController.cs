@@ -470,10 +470,11 @@ public class PlaybackController : ControllerBase
         int count = playlist.Games.Count;
 
         var gameIds = playlist.Games.Select(g => g.GameId).Distinct().ToList();
-        var fullGames = await _context.Games
+        var gamePlatforms = await _context.Games
             .Where(g => gameIds.Contains(g.GameId))
+            .Select(g => new { g.GameId, g.Platform })
             .ToListAsync();
-        var platformByGameId = fullGames.ToDictionary(
+        var platformByGameId = gamePlatforms.ToDictionary(
             g => g.GameId,
             g => g.Platform ?? PlatformTypes.LumoPlay);
 

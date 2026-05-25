@@ -24,6 +24,7 @@ namespace IntTech_Controller_Backend.Models
         public string Name { get; set; }
         public int? DisplayOrder { get; set; }
         public string? ColorHex { get; set; }
+        public bool? IsVisible { get; set; }
     }
 
     public class UpdateTagDto
@@ -32,6 +33,7 @@ namespace IntTech_Controller_Backend.Models
         public string? ParentTagId { get; set; }
         public int? DisplayOrder { get; set; }
         public string? ColorHex { get; set; }
+        public bool? IsVisible { get; set; }
     }
 
     // ── Response DTOs ──
@@ -52,6 +54,7 @@ namespace IntTech_Controller_Backend.Models
         public string Slug { get; set; }
         public int DisplayOrder { get; set; }
         public string? ColorHex { get; set; }
+        public bool IsVisible { get; set; } = true;
         public List<TagTreeNodeDto> Children { get; set; } = new();
     }
 }

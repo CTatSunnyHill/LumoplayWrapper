@@ -75,6 +75,7 @@ public class GamesController : ControllerBase
                         tag.Name,
                         tag.Slug,
                         tag.ColorHex,
+                        tag.IsVisible,
                         CategoryId = tag.CategoryId.ToString(),
                         CategoryName = cat?.Name ?? "Unknown",
                         CategorySlug = cat?.Slug ?? "unknown",
@@ -145,6 +146,7 @@ public class GamesController : ControllerBase
                     tag.Name,
                     tag.Slug,
                     tag.ColorHex,
+                    tag.IsVisible,
                     CategoryId = tag.CategoryId.ToString(),
                     CategoryName = cat?.Name ?? "Unknown",
                     CategorySlug = cat?.Slug ?? "unknown",
@@ -485,6 +487,7 @@ public class GamesController : ControllerBase
                             t.Name,
                             t.Slug,
                             t.ColorHex,
+                            t.IsVisible,
                             ParentTagId = t.ParentTagId?.ToString()
                         })
                         .ToList()
@@ -540,7 +543,8 @@ public class GamesController : ControllerBase
                 tag.Name,
                 tag.Slug,
                 CategoryId = tag.CategoryId.ToString(),
-                tag.ColorHex
+                tag.ColorHex,
+                tag.IsVisible
             })
             .ToList();
 

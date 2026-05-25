@@ -174,6 +174,7 @@ namespace IntTech_Controller_Backend.Controllers
                 Slug = slug,
                 DisplayOrder = displayOrder,
                 ColorHex = dto.ColorHex?.Trim(),
+                IsVisible = dto.IsVisible ?? true,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -255,6 +256,9 @@ namespace IntTech_Controller_Backend.Controllers
 
             if (dto.ColorHex != null)
                 tag.ColorHex = string.IsNullOrWhiteSpace(dto.ColorHex) ? null : dto.ColorHex.Trim();
+
+            if (dto.IsVisible.HasValue)
+                tag.IsVisible = dto.IsVisible.Value;
 
             await _context.SaveChangesAsync();
             return Ok(new { Message = "Tag updated successfully" });
@@ -405,6 +409,7 @@ namespace IntTech_Controller_Backend.Controllers
                     Slug = child.Slug,
                     DisplayOrder = child.DisplayOrder,
                     ColorHex = child.ColorHex,
+                    IsVisible = child.IsVisible,
                     Children = new List<TagTreeNodeDto>() // Max 1 level, no recursion
                 })
                 .ToList();
@@ -416,6 +421,7 @@ namespace IntTech_Controller_Backend.Controllers
                 Slug = tag.Slug,
                 DisplayOrder = tag.DisplayOrder,
                 ColorHex = tag.ColorHex,
+                IsVisible = tag.IsVisible,
                 Children = children
             };
         }

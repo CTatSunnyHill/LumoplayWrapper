@@ -384,6 +384,7 @@ public class PlaylistsController : ControllerBase
                     tag.Name,
                     tag.Slug,
                     tag.ColorHex,
+                    tag.IsVisible,
                     CategoryId = tag.CategoryId.ToString(),
                     CategoryName = cat?.Name ?? "Unknown",
                     CategorySlug = cat?.Slug ?? "unknown",

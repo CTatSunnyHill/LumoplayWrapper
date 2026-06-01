@@ -248,6 +248,10 @@ Discovers available PJLink inputs and merges them into stored `Inputs`, preservi
 
 Sets/clears admin labels on already-discovered inputs (does not add codes). An empty/whitespace label clears it back to null. Returns **400** if no inputs have been discovered yet.
 
+### POST /api/Projector/{id}/input/{code}
+
+Switches the active input. Admins may target any discovered code; clinicians may target only labelled codes within their allowed locations. Requires the projector to be powered on. Returns **400** if the code isn't discovered, **403** for an unlabelled code (clinician) or out-of-scope location, **409** if the projector isn't on, **500** if the PJLink switch fails.
+
 ### POST /api/Projector/{id}/on
 
 Turns a projector on.

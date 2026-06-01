@@ -303,8 +303,62 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(new { Message = "Power OFF commands processed." });
         }
 
+        // POST: api/Projector/{id}/input/{code}
+        // Switches the active input. Admins may target any discovered code;
+        // clinicians may target only labelled codes within their allowed locations.
+        // The projector must be powered on.
+        [HttpPost("{id}/input/{code}")]
+        public async Task<IActionResult> SetProjectorInput(string id, string code)
+        {
+            if (!ObjectId.TryParse(id, out ObjectId oid))
+                return BadRequest("Invalid projector ID format.");
 
+            var projector = await _dbContext.Projectors.FirstOrDefaultAsync(p => p.Id == oid);
+            if (projector == null) return NotFound();
 
+            var userRole = (User.FindFirstValue(ClaimTypes.Role) ?? "").ToLower();
+            bool isAdmin = userRole == "admin";
 
+            // ── Location scope (clinicians only) ──────────────────────────────
+            if (!isAdmin)
+            {
+                var locationsClaim = User.FindFirstValue("AllowedLocationsIds");
+                var allowedStr = string.IsNullOrEmpty(locationsClaim)
+                    ? new List<string>()
+                    : JsonSerializer.Deserialize<List<string>>(locationsClaim) ?? new List<string>();
+                var allowed = allowedStr.Where(s => ObjectId.TryParse(s, out _)).Select(ObjectId.Parse).ToList();
+                if (!allowed.Contains(projector.LocationId))
+                    return Forbid();
+            }
+
+            var inputs = projector.Inputs ?? new List<ProjectorInput>();
+
+            // ── Role-aware code validation ────────────────────────────────────
+            // Admin: code must exist among discovered inputs.
+            // Clinician: code must exist AND be labelled (non-empty label).
+            var match = inputs.FirstOrDefault(i => i.Code == code);
+            if (match == null)
+                return BadRequest("Input code is not available on this projector. Run discovery first.");
+            if (!isAdmin && string.IsNullOrWhiteSpace(match.Label))
+                return Forbid(); // labelled-only for clinicians
+
+            // ── On-gate: live power check ─────────────────────────────────────
+            var status = await _projectorService.GetPowerStatus(projector.IpAddress, projector.Port);
+            if (status != "on")
+                return Conflict($"Projector must be on to change its input (current status: {status}).");
+
+            // ── Switch ────────────────────────────────────────────────────────
+            bool ok = await _projectorService.SetInput(projector.IpAddress, projector.Port, code);
+            if (!ok)
+                return StatusCode(500, "Failed to switch projector input.");
+
+            // Persist the new selection and refresh status timestamp.
+            projector.CurrentInput = code;
+            projector.Status = status;
+            projector.LastPolled = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(projector);
+        }
     }
 }

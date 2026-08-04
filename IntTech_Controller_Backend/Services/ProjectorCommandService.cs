@@ -75,14 +75,24 @@ namespace IntTech_Controller_Backend.Services
 
         /// Switches the projector to the given PJLink input code.
         /// Returns true only on an explicit OK; false on any ERR or failure.
-        public async Task<bool> SetInput(string ipAddress, int port, string code)
-        {
-            string response = await SendRawCommandWithResponse(ipAddress, port, $"%1INPT {code}\r");
+public async Task<bool> SetInput(string ipAddress, int port, string code)
+{
+    if (string.IsNullOrWhiteSpace(code) || code.Length != 2 || !code.All(char.IsDigit))
+        return false;
 
-            if (string.IsNullOrWhiteSpace(response)) return false;
-            if (response.Contains("ERR")) return false;
-            return response.Contains("OK") || response.Contains($"={code}");
-        }
+    string response = await SendRawCommandWithResponse(ipAddress, port, $"%1INPT {code}\r");
+
+    if (string.IsNullOrWhiteSpace(response)) return false;
+
+    int eq = response.IndexOf('=');
+    if (eq < 0) return false;
+
+    string payload = response[(eq + 1)..].Trim();
+    if (payload.StartsWith("ERR", StringComparison.OrdinalIgnoreCase)) return false;
+
+    return string.Equals(payload, "OK", StringComparison.OrdinalIgnoreCase) ||
+           string.Equals(payload, code, StringComparison.Ordinal);
+}
 
         private async Task<bool> SendRawCommand(string ipAddress, int port, string command)
         {

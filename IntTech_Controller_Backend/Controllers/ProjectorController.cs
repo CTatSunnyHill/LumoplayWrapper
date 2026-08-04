@@ -316,20 +316,15 @@ namespace IntTech_Controller_Backend.Controllers
             var projector = await _dbContext.Projectors.FirstOrDefaultAsync(p => p.Id == oid);
             if (projector == null) return NotFound();
 
-            var userRole = (User.FindFirstValue(ClaimTypes.Role) ?? "").ToLower();
-            bool isAdmin = userRole == "admin";
+bool isAdmin = User.IsInRole("Admin");
 
-            // ── Location scope (clinicians only) ──────────────────────────────
-            if (!isAdmin)
-            {
-                var locationsClaim = User.FindFirstValue("AllowedLocationsIds");
-                var allowedStr = string.IsNullOrEmpty(locationsClaim)
-                    ? new List<string>()
-                    : JsonSerializer.Deserialize<List<string>>(locationsClaim) ?? new List<string>();
-                var allowed = allowedStr.Where(s => ObjectId.TryParse(s, out _)).Select(ObjectId.Parse).ToList();
-                if (!allowed.Contains(projector.LocationId))
-                    return Forbid();
-            }
+// ── Location scope (clinicians only) ──────────────────────────────
+if (!isAdmin)
+{
+    var allowed = IntTech_Controller_Backend.Helpers.ClaimsHelper.GetAllowedLocationIds(User);
+    if (!allowed.Contains(projector.LocationId))
+        return Forbid();
+}
 
             var inputs = projector.Inputs ?? new List<ProjectorInput>();
 

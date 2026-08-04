@@ -41,7 +41,7 @@ namespace IntTech_Controller_Backend.Models
     public class ProjectorInput
     {
         [BsonElement("code")]
-        public string Code { get; set; }
+public string Code { get; set; } = string.Empty;
 
         [BsonElement("label")]
         public string? Label { get; set; }

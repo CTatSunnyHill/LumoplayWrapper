@@ -30,5 +30,20 @@ namespace IntTech_Controller_Backend.Models
 
         [BsonElement("lastPolled")]
         public DateTime LastPolled { get; set; }
+
+        [BsonElement("inputs")]
+        public List<ProjectorInput>? Inputs { get; set; }
+
+        [BsonElement("currentInput")]
+        public string? CurrentInput { get; set; }
+    }
+
+    public class ProjectorInput
+    {
+        [BsonElement("code")]
+public string Code { get; set; } = string.Empty;
+
+        [BsonElement("label")]
+        public string? Label { get; set; }
     }
 }

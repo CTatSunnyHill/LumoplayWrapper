@@ -215,3 +215,55 @@ Advances to the next game in the active playlist. Returns **403** if the next ga
 ### POST /api/Playback/playlist/previous-game/{ipAddress}
 
 Goes back to the previous game in the active playlist. Returns **403** if the previous game is forbidden.
+
+---
+
+## Projector
+
+### GET /api/Projector
+
+Returns projectors visible to the caller (admins see all; others are filtered by allowed locations). Each projector's `Status` and `CurrentInput` are refreshed live via PJLink on each call.
+
+### GET /api/Projector/{id}
+
+Returns a single projector with `Status` and `CurrentInput` refreshed live via PJLink.
+
+### POST /api/Projector *(Admin)*
+
+Creates a projector from `ProjectorUpsertDto` (name, IP, port, password, locationId). `Inputs` and `CurrentInput` come back null — inputs are discovered later on demand.
+
+### PUT /api/Projector/{id} *(Admin)*
+
+Edits a projector (name, IP, port, password, location) from `ProjectorUpsertDto`. Does not touch `Inputs`, `CurrentInput`, or `Status`.
+
+### DELETE /api/Projector/{id} *(Admin)*
+
+Deletes a projector.
+
+### POST /api/Projector/{id}/discover-inputs *(Admin)*
+
+Discovers available PJLink inputs and merges them into stored `Inputs`, preserving existing labels. Idempotent and re-runnable. Returns **503** (leaving stored inputs untouched) if the projector is offline or powered off.
+
+### PUT /api/Projector/{id}/input-labels *(Admin)*
+
+Sets/clears admin labels on already-discovered inputs (does not add codes). An empty/whitespace label clears it back to null. Returns **400** if no inputs have been discovered yet.
+
+### POST /api/Projector/{id}/input/{code}
+
+Switches the active input. Admins may target any discovered code; clinicians may target only labelled codes within their allowed locations. Requires the projector to be powered on. Returns **400** if the code isn't discovered, **403** for an unlabelled code (clinician) or out-of-scope location, **409** if the projector isn't on, **500** if the PJLink switch fails.
+
+### POST /api/Projector/{id}/on
+
+Turns a projector on.
+
+### POST /api/Projector/{id}/off
+
+Turns a projector off.
+
+### POST /api/Projector/location/{locationId}/on
+
+Turns on all projectors at a location.
+
+### POST /api/Projector/location/{locationId}/off
+
+Turns off all projectors at a location.

@@ -8,33 +8,44 @@ using System.Text.Json;
 
 namespace LUMOplay_Remote_Controller.Services
 {
-    /// <summary>
-    /// Service class for interacting with the LUMOplay motion gaming platform.
-    /// Provides methods to control game playback, navigation, and volume settings.
-    /// </summary>
+    /**
+     * Service class for interacting with the LUMOplay motion gaming platform.
+     * Provides methods to control game playback, navigation, and volume settings.
+     *
+     * Commands are issued by shelling out to the vendor's scripting tool on this
+     * machine, which then talks to the device over the network — so the tool must
+     * be installed locally at the device's configured ExePath. Each instance is
+     * bound to one device and updates that device's IsConnected flag as a side
+     * effect of every command.
+     */
     public class LumoplayService
     {
         private readonly LumoplayDevice _device;
 
-        /// <summary>
-        /// Initializes a new instance of the LumoplayService for a specific device.
-        /// </summary>
-        /// <param name="device">The LUMOplay device to control.</param>
+        /**
+         * Initializes a new instance of the LumoplayService for a specific device.
+         *
+         * <param name="device">The LUMOplay device to control.</param>
+         * <exception cref="ArgumentNullException">when device is null</exception>
+         */
         public LumoplayService(LumoplayDevice device)
         {
             _device = device ?? throw new ArgumentNullException(nameof(device));
         }
 
-        /// <summary>
-        /// Gets the device this service is controlling.
-        /// </summary>
+        /** The device this service is controlling. */
         public LumoplayDevice Device => _device;
 
-        /// <summary>
-        /// Executes a LUMOplay command asynchronously through the Motion Player executable.
-        /// </summary>
-        /// <param name="command">The command to execute with its parameters.</param>
-        /// <returns>True if the command was executed successfully; otherwise, false.</returns>
+        /**
+         * Executes a LUMOplay command asynchronously through the Motion Player executable.
+         * Success is judged by the exit code, and the device's IsConnected flag
+         * is updated to match. Every failure path — missing executable, failed
+         * start, or thrown exception — marks the device disconnected and returns
+         * false rather than propagating.
+         *
+         * <param name="command">The command to execute with its parameters.</param>
+         * <returns>True if the command was executed successfully; otherwise, false.</returns>
+         */
         private async Task<bool> ExecuteCommandAsync(string command)
         {
             try
@@ -70,6 +81,8 @@ namespace LUMOplay_Remote_Controller.Services
                 }
 
                 // Create tasks to read both output and error streams
+                // Started before waiting: a full pipe buffer would otherwise
+                // block the child process from ever exiting.
                 var outputTask = process.StandardOutput.ReadToEndAsync();
                 var errorTask = process.StandardError.ReadToEndAsync();
 
@@ -101,6 +114,14 @@ namespace LUMOplay_Remote_Controller.Services
             }
         }
 
+        /**
+         * Runs a command and returns its stdout, for commands whose output the
+         * caller needs to parse. Unlike <see cref="ExecuteCommandAsync"/> this
+         * ignores the exit code and leaves IsConnected untouched.
+         *
+         * <param name="command">the command to execute with its parameters</param>
+         * <returns>the command's stdout, or null when it could not be run</returns>
+         */
         private async Task<string?> ExecuteCommandAndGetOutputAsync(string command)
         {
             try
@@ -132,10 +153,11 @@ namespace LUMOplay_Remote_Controller.Services
             }
         }
 
-        /// <summary>
-        /// Checks the connection to the device by executing a simple command.
-        /// </summary>
-        /// <returns>True if the device is connected; otherwise, false.</returns>
+        /**
+         * Checks the connection to the device by executing a simple command.
+         *
+         * <returns>True if the device is connected; otherwise, false.</returns>
+         */
         public Task<bool> CheckConnectionAsync()
         {
             // Use the "-N" command as a lightweight way to check the connection.
@@ -143,11 +165,13 @@ namespace LUMOplay_Remote_Controller.Services
             return ExecuteCommandAsync("-N");
         }
 
-        /// <summary>
-        /// Starts playing a specific game on the LUMOplay platform.
-        /// </summary>
-        /// <param name="game">The game to play.</param>
-        /// <returns>True if the game started successfully; otherwise, false.</returns>
+        /**
+         * Starts playing a specific game on the LUMOplay platform.
+         *
+         * <param name="game">The game to play.</param>
+         * <returns>True if the game started successfully; otherwise, false.</returns>
+         * <exception cref="ArgumentNullException">when game is null</exception>
+         */
         public Task<bool> PlayGameAsync(LumoplayGame game)
         {
             if (game == null) throw new ArgumentNullException(nameof(game));
@@ -156,46 +180,60 @@ namespace LUMOplay_Remote_Controller.Services
 
 
 
-        /// <summary>
-        /// Pauses the currently playing content.
-        /// </summary>
-        /// <returns>True if the pause command was successful; otherwise, false.</returns>
+        /**
+         * Pauses the currently playing content.
+         *
+         * NOTE: sends the same "-s" command as <see cref="StopContentAsync"/> —
+         * the tool exposes no separate pause. The two differ only in how
+         * DeviceManager updates local state afterwards.
+         *
+         * <returns>True if the pause command was successful; otherwise, false.</returns>
+         */
         public Task<bool> PauseContentAsync()
         {
             return ExecuteCommandAsync("-s");
         }
 
-        /// <summary>
-        /// Stops the currently playing content.
-        /// </summary>
-        /// <returns>True if the stop command was successful; otherwise, false.</returns>
+        /**
+         * Stops the currently playing content.
+         *
+         * <returns>True if the stop command was successful; otherwise, false.</returns>
+         */
         public Task<bool> StopContentAsync()
         {
             return ExecuteCommandAsync("-s");
         }
 
-        /// <summary>
-        /// Advances to the next content item in the playlist.
-        /// </summary>
-        /// <returns>True if successfully moved to next content; otherwise, false.</returns>
+        /**
+         * Advances to the next content item in the playlist the device itself is
+         * running, which is not the same as the playlist this app tracks.
+         *
+         * <returns>True if successfully moved to next content; otherwise, false.</returns>
+         */
         public Task<bool> NextContentAsync()
         {
             return ExecuteCommandAsync("-n");
         }
 
-        /// <summary>
-        /// Returns to the previous content item in the playlist.
-        /// </summary>
-        /// <returns>True if successfully moved to previous content; otherwise, false.</returns>
+        /**
+         * Returns to the previous content item in the playlist the device itself
+         * is running.
+         *
+         * <returns>True if successfully moved to previous content; otherwise, false.</returns>
+         */
         public Task<bool> PreviousContentAsync()
         {
             return ExecuteCommandAsync("-p");
         }
 
-        /// <summary>
-        /// Returns the current game and playlist information.
-        /// </summary>
-        /// <returns>True if successfully returned the playlist information; otherwise, false.</returns>
+        /**
+         * Returns the current game and playlist information.
+         *
+         * <returns>the device's reported state, or null when it could not be
+         * reached</returns>
+         * <exception cref="JsonException">when the device replies with something
+         * that is not the expected JSON</exception>
+         */
         public async Task<LumoplayServiceResponse?> CurrentGamePlaylistAsync()
         {
             var output = await ExecuteCommandAndGetOutputAsync("-N");

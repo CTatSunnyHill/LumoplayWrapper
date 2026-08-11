@@ -9,6 +9,20 @@ using MongoDB.Bson;
 
 namespace IntTech_Controller_Backend.Controllers;
 
+/**
+ * Drives what is on screen: launching games, stopping them, and stepping
+ * through playlists.
+ *
+ * Two guards run on nearly every endpoint. The device must be in one of the
+ * caller's allowed locations — answered as 404, not 403, so the response does
+ * not confirm the address exists — and the game must be permitted by the
+ * caller's tags. Only LUMOplay titles can be launched; VR and Switch entries
+ * are catalogued but skipped over.
+ *
+ * The database records what this system last told a device to do. A clinician
+ * driving the unit by hand will drift from it until the next poll in
+ * DevicesController reconciles the two.
+ */
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
@@ -17,12 +31,27 @@ public class PlaybackController : ControllerBase
     private readonly IntTechDBContext _context;
     private readonly LumoCommandService _commandService;
 
+    /**
+     * <param name="context">database context for devices, games, playlists, and tags</param>
+     * <param name="commandService">service used to send commands to the LUMOplay units</param>
+     */
     public PlaybackController(IntTechDBContext context, LumoCommandService commandService)
     {
         _context = context;
         _commandService = commandService;
     }
 
+    /**
+     * Launches a single game on a device. Doing so ends any playlist the device
+     * was running, since the device is no longer following that sequence.
+     *
+     * <param name="ipAddress">address of the target device</param>
+     * <param name="gameId">vendor id of the game to launch</param>
+     * <returns>200 with the tool's output; 400 when a parameter is blank or the
+     * game is not a LUMOplay title; 403 when the caller's tags do not permit the
+     * game; 404 when the game or device is unknown or out of scope; 502 when the
+     * device did not respond</returns>
+     */
     // POST: api/Playback/play-game/{ipAddress}/game/{gameId}
     [HttpPost("play-game/{ipAddress}/game/{gameId}")]
     public async Task<IActionResult> PlayGame(string ipAddress, string gameId)
@@ -70,6 +99,8 @@ public class PlaybackController : ControllerBase
         );
 
         // Check if command execution failed
+        // Nothing is persisted on failure, so stored state never claims a
+        // launch the device did not accept.
         if (result == null)
         {
             return StatusCode(502, new { Status = "Failed", Message = "Device command timed out or failed" });
@@ -92,6 +123,15 @@ public class PlaybackController : ControllerBase
         return Ok(new { Status = "Sent", Output = result });
     }
 
+    /**
+     * Stops whatever a device is playing. The active playlist binding is left
+     * in place, so a stop can be resumed with next/previous.
+     *
+     * <param name="ipAddress">address of the target device</param>
+     * <returns>200 with the tool's output; 400 when the address is blank;
+     * 404 when the device is unknown or out of scope; 502 when it did not
+     * respond</returns>
+     */
     // POST: api/Playback/stop-game/{ipAddress}
     [HttpPost("stop-game/{ipAddress}")]
     public async Task<IActionResult> StopGame(string ipAddress)
@@ -137,6 +177,14 @@ public class PlaybackController : ControllerBase
         return Ok(new { Status = "Stopped", Output = result });
     }
 
+    /**
+     * Asks a device directly what it is playing and returns the tool's raw
+     * output, bypassing this system's stored state.
+     *
+     * <param name="ipAddress">address of the target device</param>
+     * <returns>200 with the raw output; 400 when the address is blank; 404 when
+     * the device is unknown or out of scope; 502 when it did not respond</returns>
+     */
     // GET: api/Playback/now-playing/{ipAddress}
     [HttpGet("now-playing/{ipAddress}")]
     public async Task<IActionResult> GetNowPlaying(string ipAddress)
@@ -181,6 +229,22 @@ public class PlaybackController : ControllerBase
         return Ok(new { Output = result });
     }
 
+    /**
+     * Starts a playlist on a device by launching its first LUMOplay entry and
+     * binding the playlist to the device, so next/previous can walk it.
+     *
+     * NOTE: the playlist itself is not checked against
+     * <see cref="PlaylistVisibility"/> here — any playlist id the caller knows
+     * can be started. The tag check on the launched game still applies.
+     *
+     * <param name="ipAddress">address of the target device</param>
+     * <param name="playlistId">string form of the playlist's ObjectId</param>
+     * <returns>200 with the launched game; 400 when a parameter is blank or
+     * malformed, or the playlist is empty or has no LUMOplay entries; 403 when
+     * the caller's tags do not permit that first game; 404 when the device or
+     * playlist is unknown or out of scope; 502 when the device did not
+     * respond</returns>
+     */
     // POST: api/Playback/play-playlist/{ipAddress}/{playlistId}
     [HttpPost("play-playlist/{ipAddress}/{playlistId}")]
     public async Task<IActionResult> PlayPlaylist(string ipAddress, string playlistId)
@@ -267,6 +331,17 @@ public class PlaybackController : ControllerBase
         return Ok(new { Status = "Playlist Started", FirstGame = firstGameId, Output = result });
     }
 
+    /**
+     * Advances a device to the next LUMOplay entry in its active playlist,
+     * skipping non-launchable ones and wrapping past the end.
+     *
+     * <param name="ipAddress">address of the target device</param>
+     * <returns>200 with the new game and index; 400 when the address is blank,
+     * no playlist is active, or the playlist is gone, empty, or has nothing
+     * launchable; 403 when the caller's tags do not permit the next game;
+     * 404 when the device is unknown or out of scope; 502 when the device did
+     * not respond</returns>
+     */
     // POST: api/Playback/playlist/next-game/{ipAddress}
     [HttpPost("playlist/next-game/{ipAddress}")]
     public async Task<IActionResult> PlaylistNext(string ipAddress)
@@ -361,6 +436,17 @@ public class PlaybackController : ControllerBase
         });
     }
 
+    /**
+     * Steps a device back to the previous LUMOplay entry in its active playlist,
+     * the mirror of <see cref="PlaylistNext"/>.
+     *
+     * <param name="ipAddress">address of the target device</param>
+     * <returns>200 with the new game and index; 400 when the address is blank,
+     * no playlist is active, or the playlist is gone, empty, or has nothing
+     * launchable; 403 when the caller's tags do not permit the previous game;
+     * 404 when the device is unknown or out of scope; 502 when the device did
+     * not respond</returns>
+     */
     // POST: api/Playback/playlist/previous-game/{ipAddress}
     [HttpPost("playlist/previous-game/{ipAddress}")]
     public async Task<IActionResult> PlaylistPrevious(string ipAddress)
@@ -455,12 +541,20 @@ public class PlaybackController : ControllerBase
         });
     }
 
-    // Walks the playlist in the given direction from startIndex and returns the
-    // first index whose game is platform == "lumoplay". Returns null if the playlist
-    // contains no launchable games.
-    //
-    // direction == +1 for next, -1 for previous, 0 (treated as +1) for "first launchable from here".
-    // startIndex may be negative or >= Count; it is normalized.
+    /**
+     * Walks the playlist in the given direction from startIndex and returns the
+     * first index whose game is platform == "lumoplay". Returns null if the playlist
+     * contains no launchable games.
+     *
+     * The walk wraps around and visits each position at most once, so stepping
+     * past either end of a playlist lands back at the other.
+     *
+     * <param name="playlist">the playlist to search</param>
+     * <param name="startIndex">where to begin; may be negative or >= Count, and is normalized</param>
+     * <param name="direction">+1 for next, -1 for previous, 0 (treated as +1) for "first launchable from here"</param>
+     * <returns>the index and entry of the first launchable game, or null when
+     * the playlist holds none</returns>
+     */
     private async Task<(int Index, PlaylistGame Game)?> FindLaunchableAsync(
         Playlist playlist, int startIndex, int direction)
     {
@@ -469,6 +563,7 @@ public class PlaybackController : ControllerBase
         int step = direction < 0 ? -1 : 1;
         int count = playlist.Games.Count;
 
+        // One query for every platform up front, rather than a lookup per step.
         var gameIds = playlist.Games.Select(g => g.GameId).Distinct().ToList();
         var gamePlatforms = await _context.Games
             .Where(g => gameIds.Contains(g.GameId))
@@ -482,6 +577,7 @@ public class PlaybackController : ControllerBase
         int idx = ((startIndex % count) + count) % count;
         for (int i = 0; i < count; i++)
         {
+            // An entry missing from the library has no platform and is skipped.
             var candidate = playlist.Games[idx];
             if (platformByGameId.TryGetValue(candidate.GameId, out var platform)
                 && platform == PlatformTypes.LumoPlay)

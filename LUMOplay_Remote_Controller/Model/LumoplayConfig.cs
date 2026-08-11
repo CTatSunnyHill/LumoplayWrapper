@@ -7,29 +7,31 @@ using System.Text.Json;
 
 namespace LUMOplay_Remote_Controller.Model
 {
-    /// <summary>
-    /// Static configuration class that maintains the collection of LUMOplay devices and games.
-    /// </summary>
+    /**
+     * Static configuration class that maintains the collection of LUMOplay devices and games.
+     *
+     * This is the app's built-in fallback catalogue, hard-coded against one
+     * specific site: the device list below is baked into the source, so adding
+     * or moving a unit means a rebuild. The controller backend is the
+     * authoritative source of devices and games; this exists for running the app
+     * standalone against known hardware.
+     */
     public static class LumoplayConfig
     {
-        /// <summary>
-        /// Gets the collection of available LUMOplay devices.
-        /// </summary>
+        /** The hard-coded LUMOplay devices, in the order they are listed below. */
         public static ReadOnlyCollection<LumoplayDevice> Devices { get; }
 
-        /// <summary>
-        /// Gets the collection of available LUMOplay games.
-        /// </summary>
+        /** Games loaded from the bundled games.json; empty if that file could not be read. */
         public static ReadOnlyCollection<LumoplayGame> Games { get; }
 
-        /// <summary>
-        /// Gets the collection of available LUMOplay playlists.
-        /// </summary>
+        /** The built-in playlists, currently a single one holding every game. */
         public static ReadOnlyCollection<Playlist> Playlists { get; }
 
-        /// <summary>
-        /// Static constructor to initialize the device and game collections.
-        /// </summary>
+        /**
+         * Builds the device, game, and playlist collections once, on first use.
+         * A failure to read games.json is logged and swallowed, leaving the
+         * catalogue empty rather than preventing the app from starting.
+         */
         static LumoplayConfig()
         {
             // Initialize devices
@@ -188,26 +190,37 @@ namespace LUMOplay_Remote_Controller.Model
             Playlists = new ReadOnlyCollection<Playlist>(playlists);
         }
 
-        /// <summary>
-        /// Gets a device by its name.
-        /// </summary>
-        /// <param name="name">The name of the device to find.</param>
-        /// <returns>The matching device or null if not found.</returns>
+        /**
+         * Finds a device by name, ignoring case.
+         *
+         * <param name="name">the device name to look for</param>
+         * <returns>the matching device, or null when there is none</returns>
+         */
         public static LumoplayDevice GetDeviceByName(string name)
         {
             return Devices.FirstOrDefault(d => d.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
         }
 
-        /// <summary>
-        /// Gets a game by its ID.
-        /// </summary>
-        /// <param name="gameId">The ID of the game to find.</param>
-        /// <returns>The matching game or null if not found.</returns>
+        /**
+         * Finds a game by its id, compared as a string.
+         *
+         * <param name="gameId">the game id to look for</param>
+         * <returns>the matching game, or null when there is none</returns>
+         */
         public static LumoplayGame GetGameById(string gameId)
         {
             return Games.FirstOrDefault(g => g.GameId == gameId);
         }
 
+        /**
+         * Finds a game by its numeric id, for callers holding the vendor's
+         * integer scene id rather than the string form.
+         *
+         * <param name="gameId">the numeric game id to look for</param>
+         * <returns>the matching game, or null when there is none</returns>
+         * <exception cref="FormatException">when any catalogued game has a
+         * non-numeric id, since every id is parsed during the scan</exception>
+         */
         public static LumoplayGame GetGameById(int gameId)
         {
             return Games.FirstOrDefault(g => Convert.ToInt64(g.GameId) == gameId);

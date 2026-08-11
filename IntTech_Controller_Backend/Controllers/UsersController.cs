@@ -7,6 +7,11 @@ using MongoDB.Bson;
 
 namespace IntTech_Controller_Backend.Controllers
 {
+    /**
+     * Account administration. Admin-only in its entirety. The seeded "admin"
+     * account is protected here: it cannot be deleted or demoted, so the system
+     * can never be left without an administrator.
+     */
     [ApiController]
     [Route("/api/[Controller]")]
     [Authorize(Roles = "Admin")]
@@ -15,15 +20,23 @@ namespace IntTech_Controller_Backend.Controllers
     {
         private readonly IntTechDBContext _context;
 
+        /**
+         * <param name="context">database context for the users and playlists collections</param>
+         */
         public UsersController(IntTechDBContext context)
         {
             _context = context;
         }
 
 
+        /**
+         * Lists every account without its password hash.
+         *
+         * <returns>200 with all users, ids rendered as strings</returns>
+         */
         // GET: api/Users
         [HttpGet]
-        public async Task<IActionResult> GetUsers() 
+        public async Task<IActionResult> GetUsers()
         {
             // 1. Fetch raw users from the database FIRST (Executes the DB query)
             // This prevents the EF Core MongoDB provider from crashing (500 error)
@@ -43,6 +56,15 @@ namespace IntTech_Controller_Backend.Controllers
         }
 
 
+        /**
+         * Creates an account with a BCrypt-hashed password. Usernames are
+         * unique, compared case-insensitively. Location and tag ids that do not
+         * parse are silently skipped rather than failing the request.
+         *
+         * <param name="dto">the credentials, role, and access grants</param>
+         * <returns>200 on success; 400 when the body is missing, a required
+         * field is blank, or the username is taken</returns>
+         */
         // POST: api/users
         [HttpPost]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto)
@@ -120,6 +142,15 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(new { Message = "User created successfully"});
         }
 
+        /**
+         * Deletes an account along with every playlist it owns. Call
+         * <see cref="GetPlaylistImpact"/> first to show the admin what will be
+         * lost — including any shared defaults this user published.
+         *
+         * <param name="id">string form of the user's ObjectId</param>
+         * <returns>200 on success; 400 for a malformed id or the master admin;
+         * 404 when not found</returns>
+         */
         // DELETE: api/users/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(string id)
@@ -140,6 +171,13 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(new { Message = "User deleted" });
         }
 
+        /**
+         * Counts what deleting a user would take with them, so the UI can warn
+         * before the cascade in <see cref="DeleteUser"/> runs.
+         *
+         * <param name="userId">string form of the user's ObjectId</param>
+         * <returns>200 with personalCount and defaultCount; 400 for a malformed id</returns>
+         */
         // GET: api/Users/{userId}/playlist-impact
         // Returns counts of personal and default playlists that would be deleted with the user.
         [HttpGet("{userId}/playlist-impact")]
@@ -155,6 +193,17 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(new { personalCount, defaultCount });
         }
 
+        /**
+         * Changes a user's role or access grants. Any real change bumps their
+         * session version, which invalidates tokens already issued to them and
+         * forces a re-login on their next request. Unchanged values are detected
+         * by set comparison so a no-op save does not log anyone out.
+         *
+         * <param name="id">string form of the user's ObjectId</param>
+         * <param name="dto">the fields to change; nulls are left alone</param>
+         * <returns>200 with the new session version; 400 for a malformed id, an
+         * unknown role, or an attempt to demote the master admin; 404 when not found</returns>
+         */
         // PUT: api/users/{id}
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(string id, [FromBody] UpdateUserDto dto)
@@ -217,18 +266,28 @@ namespace IntTech_Controller_Backend.Controllers
     }
 }
 
+/** Request body for creating an account. */
 public class CreateUserDto
 {
+    /** Login name; must not already be taken. */
     public string Username { get; set; }
+    /** Plain-text password, hashed before it is stored. */
     public string Password { get; set; }
+    /** Access level to grant: "Admin" or "User". */
     public string Role { get; set; }
+    /** String forms of the location ObjectIds this user may control. */
     public List<string> AllowedLocationsIds { get; set; } = new List<string>();
+    /** String forms of the tag ObjectIds gating which games this user may see. */
     public List<string> AllowedTagIds { get; set; } = new List<string>();
 }
 
+/** Request body for editing an account. Null members are left unchanged. */
 public class UpdateUserDto
 {
+    /** New role, or null to keep the current one. */
     public string? Role { get; set; }
+    /** Replacement allowed locations, or null to keep the current ones. */
     public List<string>? AllowedLocationsIds { get; set; }
+    /** Replacement allowed tags, or null to keep the current ones. */
     public List<string>? AllowedTagIds { get; set; }
 }

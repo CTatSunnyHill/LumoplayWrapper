@@ -8,6 +8,14 @@ using MongoDB.Bson;
 
 namespace IntTech_Controller_Backend.Controllers;
 
+/**
+ * The game library: catalog entries, their artwork and one-pagers, and their
+ * tag assignments. Reads are open to any signed-in user but filtered by tag;
+ * every write is admin-only.
+ *
+ * Games are addressed throughout by their vendor GameId, not their Mongo id,
+ * because that is the identifier devices understand.
+ */
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
@@ -16,6 +24,10 @@ public class GamesController : ControllerBase
     private readonly IntTechDBContext _context;
     private readonly GameFileStorage _fileStorage;
 
+    /**
+     * <param name="context">database context for games, tags, and categories</param>
+     * <param name="fileStorage">helper that stores artwork and one-pagers under the web root</param>
+     */
     public GamesController(IntTechDBContext context, GameFileStorage fileStorage)
     {
         _context = context;
@@ -24,6 +36,14 @@ public class GamesController : ControllerBase
 
     // ===== CATALOG =====
 
+    /**
+     * Lists the games the caller's tags permit, each with its tags resolved and
+     * ordered by category.
+     *
+     * <param name="platform">optional platform to narrow to; filtering on
+     * lumoplay also matches older records that predate the platform field</param>
+     * <returns>200 with the visible games; 400 for an unrecognised platform</returns>
+     */
     // GET: api/Games
     [HttpGet]
     public async Task<IActionResult> GetGames([FromQuery] string? platform)
@@ -100,6 +120,14 @@ public class GamesController : ControllerBase
         return Ok(response);
     }
 
+    /**
+     * Fetches one game with its tags resolved. A game the caller's tags do not
+     * permit answers 404 rather than 403, matching the list endpoint where it
+     * simply would not appear.
+     *
+     * <param name="gameId">vendor id of the game</param>
+     * <returns>200 with the game; 404 when it does not exist or is not visible</returns>
+     */
     // GET: api/Games/{gameId}
     [HttpGet("{gameId}")]
     public async Task<IActionResult> GetGameById(string gameId)
@@ -168,6 +196,17 @@ public class GamesController : ControllerBase
         });
     }
 
+    /**
+     * Adds a game to the library, untagged. LUMOplay titles must supply the
+     * vendor's own GameId, since that is what the device is told to launch;
+     * VR and Switch titles are catalogue-only, so an id is generated when none
+     * is given.
+     *
+     * <param name="dto">the name, platform, and optional media file names</param>
+     * <returns>200 with the created game; 400 when the name is blank, the
+     * platform is unrecognised, or a LUMOplay game has no GameId; 409 when that
+     * GameId is already in the library</returns>
+     */
     // POST: api/Games
     [HttpPost]
     [Authorize(Roles = "Admin")]
@@ -230,6 +269,18 @@ public class GamesController : ControllerBase
         });
     }
 
+    /**
+     * Edits a game's presentation. Omitting a field leaves it alone, while
+     * passing an empty string clears it. File names are accepted only as bare
+     * names with an allowed extension — this endpoint points at files the
+     * upload endpoints already stored, so a path here would be an attempt to
+     * reach elsewhere on disk.
+     *
+     * <param name="gameId">vendor id of the game</param>
+     * <param name="dto">the fields to change</param>
+     * <returns>200 with the updated game; 400 when the body is missing or a file
+     * name has path components or a disallowed extension; 404 when not found</returns>
+     */
     // PUT: api/Games/{gameId}
     [HttpPut("{gameId}")]
     [Authorize(Roles = "Admin")]
@@ -263,13 +314,13 @@ public class GamesController : ControllerBase
             {
                 var sanitized = dto.ImageFileName.Trim();
                 var baseName = Path.GetFileName(sanitized);
-                
+
                 // Validate that the sanitized name matches the original (no path components)
                 if (!string.Equals(baseName, sanitized, StringComparison.Ordinal))
                 {
                     return BadRequest("ImageFileName must be a simple file name without path components.");
                 }
-                
+
                 // Validate file extension
                 var extension = Path.GetExtension(baseName).ToLowerInvariant();
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
@@ -277,7 +328,7 @@ public class GamesController : ControllerBase
                 {
                     return BadRequest($"ImageFileName has invalid extension '{extension}'. Allowed: {string.Join(", ", allowedExtensions)}");
                 }
-                
+
                 game.ImageFileName = baseName;
             }
         }
@@ -325,6 +376,14 @@ public class GamesController : ControllerBase
         });
     }
 
+    /**
+     * Removes a game from the library. Its stored artwork and one-pager are not
+     * deleted, and playlists still holding it keep the entry — those entries are
+     * simply skipped when the playlist is read or played.
+     *
+     * <param name="gameId">vendor id of the game</param>
+     * <returns>200 on success; 404 when not found</returns>
+     */
     // DELETE: api/Games/{gameId}
     [HttpDelete("{gameId}")]
     [Authorize(Roles = "Admin")]
@@ -346,6 +405,16 @@ public class GamesController : ControllerBase
 
     // ===== FILES =====
 
+    /**
+     * Uploads cover art for a game, replacing any image already stored. The
+     * stored name is derived from the game's name, so re-uploading overwrites
+     * rather than accumulating files.
+     *
+     * <param name="gameId">vendor id of the game</param>
+     * <param name="file">the image to store</param>
+     * <returns>200 with the stored name and its public URL; 400 when no file was
+     * sent or it fails validation; 404 when the game is not found</returns>
+     */
     // POST: api/Games/{gameId}/image
     [HttpPost("{gameId}/image")]
     [Authorize(Roles = "Admin")]
@@ -375,6 +444,13 @@ public class GamesController : ControllerBase
         });
     }
 
+    /**
+     * Removes a game's cover art, deleting the stored file as well as the
+     * reference to it.
+     *
+     * <param name="gameId">vendor id of the game</param>
+     * <returns>200 on success; 400 when the game has no image; 404 when not found</returns>
+     */
     // DELETE: api/Games/{gameId}/image
     [HttpDelete("{gameId}/image")]
     [Authorize(Roles = "Admin")]
@@ -392,6 +468,17 @@ public class GamesController : ControllerBase
         return Ok($"Image for game '{game.Name}' has been removed.");
     }
 
+    /**
+     * Uploads a one-pager for a game, replacing any already stored. PDFs are
+     * allowed here as well as images, and the "-onepager" suffix keeps the file
+     * distinct from the cover art in storage.
+     *
+     * <param name="gameId">vendor id of the game</param>
+     * <param name="file">the document or image to store</param>
+     * <returns>200 with the stored name and its public URL; 400 when no file was
+     * sent, the type is not allowed, or it exceeds 20 MB; 404 when the game is
+     * not found</returns>
+     */
     // POST: api/Games/{gameId}/one-pager
     [HttpPost("{gameId}/one-pager")]
     [Authorize(Roles = "Admin")]
@@ -425,6 +512,13 @@ public class GamesController : ControllerBase
         });
     }
 
+    /**
+     * Removes a game's one-pager, deleting the stored file as well as the
+     * reference to it.
+     *
+     * <param name="gameId">vendor id of the game</param>
+     * <returns>200 on success; 400 when the game has no one-pager; 404 when not found</returns>
+     */
     // DELETE: api/Games/{gameId}/one-pager
     [HttpDelete("{gameId}/one-pager")]
     [Authorize(Roles = "Admin")]
@@ -444,8 +538,14 @@ public class GamesController : ControllerBase
 
     // ===== TAGS =====
 
+    /**
+     * Returns resolved tag details for a single game, grouped by category so the
+     * UI can render one section per category without regrouping.
+     *
+     * <param name="gameId">vendor id of the game</param>
+     * <returns>200 with the game's tags grouped by category; 404 when not found</returns>
+     */
     // GET: api/Games/{gameId}/tags
-    // Returns resolved tag details for a single game.
     [HttpGet("{gameId}/tags")]
     public async Task<IActionResult> GetGameTags(string gameId)
     {
@@ -498,8 +598,20 @@ public class GamesController : ControllerBase
         return Ok(tagsByCategory);
     }
 
+    /**
+     * Replaces ALL tag assignments for a game in one call. Every id must be
+     * valid and known before anything is written, so a bad entry leaves the
+     * game's existing tags untouched. Duplicates are collapsed, and an empty
+     * list clears the game's tags — which, given how tag visibility works, makes
+     * the game visible to every user.
+     *
+     * <param name="gameId">vendor id of the game</param>
+     * <param name="dto">the complete set of tag ids to apply</param>
+     * <returns>200 with the resolved tags for immediate UI use; 400 when the
+     * body is missing or an id is malformed; 404 when the game or any tag is
+     * unknown</returns>
+     */
     // POST: api/Games/{gameId}/tags
-    // Replaces ALL tag assignments for a game in one call.
     [HttpPost("{gameId}/tags")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> SetGameTags(string gameId, [FromBody] SetGameTagsToDto dto)

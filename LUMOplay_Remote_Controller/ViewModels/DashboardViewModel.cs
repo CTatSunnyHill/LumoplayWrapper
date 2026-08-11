@@ -7,16 +7,30 @@ using System.Threading.Tasks;
 
 namespace LUMOplay_Remote_Controller.ViewModels
 {
+    /**
+     * Backs the dashboard's per-device transport controls. Holds no state of its
+     * own: the device collection is the manager's, and the manager updates each
+     * device as commands succeed.
+     */
     public partial class DashboardViewModel : ObservableObject
     {
         private readonly DeviceManager _deviceManager;
+        /** The devices shown on the dashboard, owned by the device manager. */
         public ObservableCollection<LumoplayDevice> Devices => _deviceManager.Devices;
 
+        /**
+         * <param name="deviceManager">shared device state and playback control</param>
+         */
         public DashboardViewModel(DeviceManager deviceManager)
         {
             _deviceManager = deviceManager;
         }
 
+        /**
+         * Steps a device back to the previous game in its playlist.
+         *
+         * <param name="device">the device to act on; null is ignored</param>
+         */
         [RelayCommand]
         private async Task PreviousGameAsync(LumoplayDevice device)
         {
@@ -24,6 +38,13 @@ namespace LUMOplay_Remote_Controller.ViewModels
             await _deviceManager.PreviousGameAsync(device.IpAddress);
         }
 
+        /**
+         * Pauses a playing device, or resumes a paused one by relaunching its
+         * current game. A paused device with no current game does nothing, since
+         * there is nothing to resume.
+         *
+         * <param name="device">the device to act on; null is ignored</param>
+         */
         [RelayCommand]
         private async Task TogglePlayPauseAsync(LumoplayDevice device)
         {
@@ -45,6 +66,11 @@ namespace LUMOplay_Remote_Controller.ViewModels
             }
         }
 
+        /**
+         * Advances a device to the next game in its playlist.
+         *
+         * <param name="device">the device to act on; null is ignored</param>
+         */
         [RelayCommand]
         private async Task NextGameAsync(LumoplayDevice device)
         {

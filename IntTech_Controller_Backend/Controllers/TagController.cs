@@ -8,6 +8,12 @@ using System.Text.RegularExpressions;
 
 namespace IntTech_Controller_Backend.Controllers
 {
+    /**
+     * Manages the tags that classify games and gate who may see them. Tags nest
+     * one level deep at most — a tag may have children, or a parent, never
+     * both — and that invariant is enforced on every write. Any signed-in user
+     * may read tags; only admins may change them.
+     */
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
@@ -15,14 +21,21 @@ namespace IntTech_Controller_Backend.Controllers
     {
         private readonly IntTechDBContext _context;
 
+        /**
+         * <param name="context">database context for tags, categories, games, and users</param>
+         */
         public TagController(IntTechDBContext context)
         {
             _context = context;
         }
 
+        /**
+         * Returns ALL tags grouped by category with subcategory nesting.
+         * This is the primary endpoint the frontend uses to build filter UI.
+         *
+         * <returns>200 with every category and its tag tree, in display order</returns>
+         */
         // GET: api/Tag
-        // Returns ALL tags grouped by category with subcategory nesting.
-        // This is the primary endpoint the frontend uses to build filter UI.
         [HttpGet]
         public async Task<IActionResult> GetAllTagsGrouped()
         {
@@ -60,8 +73,14 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(result);
         }
 
-        // GET: api/Tag?categoryId={id}
-        // Returns tags for a single category (flat list, not grouped).
+        /**
+         * Returns the tag tree for a single category.
+         *
+         * <param name="categoryId">string form of the category's ObjectId</param>
+         * <returns>200 with that category's top-level tags and their children;
+         * 400 for a malformed id; 404 when the category does not exist</returns>
+         */
+        // GET: api/Tag/by-category/{categoryId}
         [HttpGet("by-category/{categoryId}")]
         public async Task<IActionResult> GetTagsByCategory(string categoryId)
         {
@@ -88,6 +107,12 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(topLevel);
         }
 
+        /**
+         * Fetches one tag as a flat record, without its children.
+         *
+         * <param name="id">string form of the tag's ObjectId</param>
+         * <returns>200 with the tag; 400 for a malformed id; 404 when not found</returns>
+         */
         // GET: api/Tag/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetTag(string id)
@@ -101,6 +126,18 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(tag);
         }
 
+        /**
+         * Creates a tag, optionally nested under a parent. Names need only be
+         * unique within their own scope — the same category and parent — so two
+         * categories may both have a "General" tag. When no display order is
+         * given the tag is appended after its last sibling.
+         *
+         * <param name="dto">the name, owning category, and optional parent, colour, and visibility</param>
+         * <returns>200 with the created tag; 400 when a required field is blank,
+         * an id is malformed, the parent is in another category or is itself
+         * nested, or the name is taken in that scope; 404 when the category or
+         * parent tag does not exist</returns>
+         */
         // POST: api/Tag
         [HttpPost]
         [Authorize(Roles = "Admin")]
@@ -184,6 +221,18 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(tag);
         }
 
+        /**
+         * Updates a tag in place; omitted fields are left alone. A tag can be
+         * re-parented, including promotion back to top level by passing an empty
+         * ParentTagId, but never in a way that would nest more than one level or
+         * make it its own ancestor.
+         *
+         * <param name="id">string form of the tag's ObjectId</param>
+         * <param name="dto">the fields to change</param>
+         * <returns>200 on success; 400 for a malformed id, a duplicate name in
+         * scope, or an illegal re-parent; 404 when the tag or new parent does
+         * not exist</returns>
+         */
         // PUT: api/Tag/{id}
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
@@ -264,10 +313,19 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(new { Message = "Tag updated successfully" });
         }
 
+        /**
+         * Reorders only top-level tags (ParentTagId == null) belonging to the
+         * given category. Assigns DisplayOrder = list index for each match.
+         * The whole request is validated before anything is written, and any id
+         * that is nested or in another category counts as missing.
+         *
+         * <param name="categoryId">string form of the owning category's ObjectId</param>
+         * <param name="tagIds">the top-level tag ids, in the desired order</param>
+         * <returns>200 with the number reordered; 400 when the list is missing
+         * or holds an invalid, duplicated, or ineligible id; 404 when the
+         * category does not exist</returns>
+         */
         // PUT: api/Tag/category/{categoryId}/reorder
-        // Body: ["tagId1", "tagId2", ...] in the new desired order.
-        // Reorders only top-level tags (ParentTagId == null) belonging to the
-        // given category. Assigns DisplayOrder = list index for each match.
         [HttpPut("category/{categoryId}/reorder")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ReorderTags(string categoryId, [FromBody] List<string> tagIds)
@@ -319,6 +377,8 @@ namespace IntTech_Controller_Backend.Controllers
                 });
             }
 
+            // The query itself enforces eligibility, so a nested tag or one from
+            // another category simply does not come back and is reported missing.
             var requestedIds = parsedIds.Select(x => x.Oid).ToList();
             var eligibleTags = await _context.Tags
                 .Where(t => t.CategoryId == categoryOid
@@ -351,6 +411,17 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(new { Message = "Tag order updated", Count = requestedIds.Count });
         }
 
+        /**
+         * Deletes a tag, refusing while it still has children or is assigned to
+         * any game. Users granted the tag have it revoked and their session
+         * version bumped, so their access narrows on their very next request
+         * rather than whenever their token happens to expire.
+         *
+         * <param name="id">string form of the tag's ObjectId</param>
+         * <returns>200 with the number of users affected; 400 for a malformed
+         * id, a tag with children, or a tag still in use by a game; 404 when
+         * not found</returns>
+         */
         // DELETE: api/Tag/{id}
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
@@ -396,6 +467,15 @@ namespace IntTech_Controller_Backend.Controllers
 
         // ── Helpers ──
 
+        /**
+         * Turns a tag and its siblings into a tree node. Children are attached
+         * one level down with empty child lists of their own, matching the
+         * one-level nesting limit the write endpoints enforce.
+         *
+         * <param name="tag">the tag to build a node for</param>
+         * <param name="allTags">the candidate tags to draw children from, usually one category's worth</param>
+         * <returns>the node, with its children in display order</returns>
+         */
         private static TagTreeNodeDto BuildTagNode(Tag tag, List<Tag> allTags)
         {
             var children = allTags
@@ -426,6 +506,13 @@ namespace IntTech_Controller_Backend.Controllers
             };
         }
 
+        /**
+         * Derives a URL-safe slug from a tag name: lowercased, punctuation
+         * dropped, whitespace turned into hyphens, and runs of hyphens collapsed.
+         *
+         * <param name="name">the tag name to convert</param>
+         * <returns>the slug form of that name</returns>
+         */
         private static string GenerateSlug(string name)
         {
             var slug = name.ToLowerInvariant().Trim();

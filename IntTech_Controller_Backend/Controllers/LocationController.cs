@@ -7,6 +7,10 @@ using MongoDB.Bson;
 
 namespace IntTech_Controller_Backend.Controllers
 {
+    /**
+     * Manages the rooms and sites that devices and projectors are assigned to.
+     * Any signed-in user may read locations; only admins may change them.
+     */
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
@@ -14,11 +18,19 @@ namespace IntTech_Controller_Backend.Controllers
     {
         private readonly IntTechDBContext _context;
 
+        /**
+         * <param name="context">database context for the locations collection</param>
+         */
         public LocationController(IntTechDBContext context)
         {
             _context = context;
         }
 
+        /**
+         * Lists every location.
+         *
+         * <returns>200 with all locations, unfiltered by the caller's own access</returns>
+         */
         [HttpGet]
         public async Task<IActionResult> GetLocations()
         {
@@ -26,6 +38,12 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(locations);
         }
 
+        /**
+         * Creates a location. Names are unique, compared case-insensitively.
+         *
+         * <param name="dto">the name to give the new location</param>
+         * <returns>200 with the created location; 400 when the name is blank or taken</returns>
+         */
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateLocation([FromBody] LocationDto dto)
@@ -45,6 +63,14 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(newLocation);
         }
 
+        /**
+         * Renames a location.
+         *
+         * <param name="id">string form of the location's ObjectId</param>
+         * <param name="dto">the new name</param>
+         * <returns>200 on success; 400 for a malformed id or a name already in
+         * use by another location; 404 when no such location exists</returns>
+         */
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateLocation(string id, [FromBody] LocationDto dto)
@@ -63,6 +89,14 @@ namespace IntTech_Controller_Backend.Controllers
         }
 
 
+        /**
+         * Deletes a location, refusing while any device or projector still
+         * points at it so no equipment is orphaned.
+         *
+         * <param name="id">string form of the location's ObjectId</param>
+         * <returns>200 on success; 400 for a malformed id or a location still in
+         * use; 404 when no such location exists</returns>
+         */
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteLocation(string id)
@@ -87,8 +121,10 @@ namespace IntTech_Controller_Backend.Controllers
         }
     }
 
+    /** Request body for creating or renaming a location. */
     public class LocationDto
     {
+        /** The location name to set. */
         public string Name { get; set; }
     }
 }

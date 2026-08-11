@@ -9,6 +9,13 @@ using MongoDB.Bson;
 
 namespace IntTech_Controller_Backend.Controllers;
 
+/**
+ * Device inventory and live status. The read endpoints poll the units
+ * themselves rather than trusting stored state, then write what they learn back
+ * to the database. Non-admins are filtered on two axes: which devices they see
+ * at all (by location) and how much of a device's state they are told (by tag
+ * and playlist visibility).
+ */
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
@@ -17,12 +24,27 @@ public class DevicesController : ControllerBase
     private readonly IntTechDBContext _context;
     private readonly LumoCommandService _commandService;
 
+    /**
+     * <param name="context">database context for devices, games, tags, and playlists</param>
+     * <param name="commandService">service used to poll the LUMOplay units</param>
+     */
     public DevicesController(IntTechDBContext context, LumoCommandService commandService)
     {
         _context = context;
         _commandService = commandService;
     }
 
+    /**
+     * Lists the devices the caller may control, polling each one in parallel to
+     * refresh its status and now-playing game before answering. A device that
+     * does not respond is reported offline rather than failing the request.
+     *
+     * Non-admins have details redacted from the response — a game they are not
+     * tagged for, or a playlist they cannot see, comes back null — while the
+     * unredacted state is still what gets persisted.
+     *
+     * <returns>200 with the visible devices and their refreshed state</returns>
+     */
     // GET: api/Devices
     [HttpGet]
     public async Task<IActionResult> GetDevices()
@@ -64,6 +86,8 @@ public class DevicesController : ControllerBase
 
                         if (device.CurrentLumoGameId != null)
                         {
+                            // The game changed without us asking — someone drove the
+                            // unit directly — so any playlist we were tracking is void.
                             if (device.CurrentLumoGameId != gameId.ToString() && allGames.ContainsKey(gameId.ToString()))
                             {
                                 device.CurrentLumoGameId = allGames[gameId.ToString()].GameId;
@@ -92,6 +116,7 @@ public class DevicesController : ControllerBase
 
         await Task.WhenAll(pingTasks);
         await _context.SaveChangesAsync();
+        // Tag data is only loaded when it will actually be used to redact.
         var allowedTagIds = userRole != "Admin"
             ? ClaimsHelper.GetAllowedTagIds(User).ToHashSet()
             : new HashSet<ObjectId>();
@@ -143,6 +168,15 @@ public class DevicesController : ControllerBase
         return Ok(response);
     }
 
+    /**
+     * Fetches one device by address, polling it for fresh status. A device
+     * outside the caller's locations answers 404 rather than 403, so the
+     * response does not confirm that the address exists.
+     *
+     * <param name="ipAddress">address of the device to look up</param>
+     * <returns>200 with the device's refreshed state; 400 when the address is
+     * blank; 404 when no such device exists or it is out of scope</returns>
+     */
     // GET: api/Devices/{ipAddress}
     [HttpGet("{ipAddress}")]
     public async Task<IActionResult> GetDevicesByIpAddress(string ipAddress)
@@ -185,6 +219,8 @@ public class DevicesController : ControllerBase
 
                     if (device.CurrentLumoGameId != null)
                     {
+                        // The game changed without us asking — someone drove the
+                        // unit directly — so any playlist we were tracking is void.
                         if (device.CurrentLumoGameId != gameId.ToString() && allGames.ContainsKey(gameId.ToString()))
                         {
                             device.CurrentLumoGameId = allGames[gameId.ToString()].GameId;
@@ -240,6 +276,16 @@ public class DevicesController : ControllerBase
         });
     }
 
+    /**
+     * Registers a device. Addresses are unique. All live state on the posted
+     * body is overwritten with a clean offline baseline, so a client cannot
+     * seed a device as already playing.
+     *
+     * <param name="device">the device to add; only name, address, security key,
+     * and location are taken from the body</param>
+     * <returns>200 with the stored device; 400 when the address is blank;
+     * 409 when that address is already registered</returns>
+     */
     // POST: api/Devices
     [HttpPost]
     [Authorize(Roles = "Admin")]
@@ -269,6 +315,14 @@ public class DevicesController : ControllerBase
         return Ok(device);
     }
 
+    /**
+     * Removes a device from the inventory. The unit itself is left running
+     * whatever it is running; only this system stops tracking it.
+     *
+     * <param name="ipAddress">address of the device to remove</param>
+     * <returns>200 on success; 400 when the address is blank; 404 when no such
+     * device exists</returns>
+     */
     // DELETE: api/Devices
     [HttpDelete]
     [Authorize(Roles = "Admin")]

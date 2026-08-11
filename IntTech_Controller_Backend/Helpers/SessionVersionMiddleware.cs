@@ -5,13 +5,21 @@ using MongoDB.Bson;
 
 namespace IntTech_Controller_Backend.Helpers;
 
-/// <summary>
-/// Rejects any authenticated request whose JWT SessionVersion claim no longer matches the
-/// user's current SessionVersion in the database. This forces re-login after an admin edits
-/// a user's role, locations, or tags.
-/// </summary>
+/**
+ * Rejects any authenticated request whose JWT SessionVersion claim no longer matches the
+ * user's current SessionVersion in the database. This forces re-login after an admin edits
+ * a user's role, locations, or tags.
+ */
 public class SessionVersionMiddleware(RequestDelegate next)
 {
+    /**
+     * Validates the caller's session version and either passes the request on or
+     * answers 401. Anonymous requests are passed through untouched; a token whose
+     * id or version claim is missing or malformed is treated as expired.
+     *
+     * <param name="context">the request being processed</param>
+     * <param name="db">database context used to read the user's current session version</param>
+     */
     public async Task InvokeAsync(HttpContext context, IntTechDBContext db)
     {
         if (context.User.Identity?.IsAuthenticated == true)

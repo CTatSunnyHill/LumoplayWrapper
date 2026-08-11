@@ -5,27 +5,26 @@ using System.Text;
 namespace LUMOplay_Remote_Controller.Model
 {
 
-    /// Represents a LUMOplay game with its metadata.
+    /**
+     * A LUMOplay game with its metadata, as loaded from the bundled games.json
+     * or fetched from the controller backend.
+     */
     public class LumoplayGame
     {
 
-        /// Gets or sets the unique identifier of the game.
+        /** Vendor game id, used when instructing a device to launch this title. */
         public string GameId { get; set; }
 
-    
-        /// Gets or sets the display name of the game.
+        /** Display name of the game. */
         public string Name { get; set; }
 
-
-        /// Gets or sets the URL or local path to the game's thumbnail image.
+        /** URL or local path to the game's thumbnail image. */
         public string ImageUrl { get; set; }
 
-
-        /// Gets or sets the description of the game.
+        /** Blurb shown on the game card. */
         public string Description { get; set; }
 
-
-        /// Gets or sets the location type where the game is meant to be played (Wall/Floor).
+        /** Surface the game is meant to be projected onto: "Wall" or "Floor". */
         public string LocationType { get; set; }
     }
 }

@@ -9,6 +9,16 @@ using MongoDB.Driver;
 
 namespace IntTech_Controller_Backend.Controllers;
 
+/**
+ * Playlist management. Two access rules run side by side here: a user may
+ * *see* their own playlists plus every published default, but may only *edit*
+ * the ones they own. Games inside a playlist are separately filtered by tag, so
+ * a shared default can show different contents to different clinicians.
+ *
+ * Per-owner name uniqueness is enforced by a MongoDB index rather than a
+ * pre-check, so a collision surfaces as a write exception and is translated to
+ * 409 here.
+ */
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
@@ -16,13 +26,22 @@ public class PlaylistsController : ControllerBase
 {
     private readonly IntTechDBContext _context;
 
+    /**
+     * <param name="context">database context for playlists, games, tags, and categories</param>
+     */
     public PlaylistsController(IntTechDBContext context)
     {
         _context = context;
     }
 
+    /**
+     * Returns caller's own playlists + all default playlists, with hydrated game objects and resolved tags.
+     * Entries whose game has since left the library are dropped, as are games
+     * the caller's tags do not permit.
+     *
+     * <returns>200 with the visible playlists and their visible games</returns>
+     */
     // GET: api/Playlists
-    // Returns caller's own playlists + all default playlists, with hydrated game objects and resolved tags.
     [HttpGet]
     public async Task<IActionResult> GetPlaylists()
     {
@@ -52,6 +71,8 @@ public class PlaylistsController : ControllerBase
         var allTagsById = await _context.Tags.ToDictionaryAsync(t => t.Id);
         var allCategoriesById = await _context.Categories.ToDictionaryAsync(c => c.Id);
 
+        // Admins get an empty map here: tags are still resolved for display via
+        // allTagsById, but the visibility check is skipped outright.
         var visibilityTagsById = userRole != "Admin"
             ? allTagsById
             : new Dictionary<ObjectId, Models.Tag>();
@@ -73,8 +94,15 @@ public class PlaylistsController : ControllerBase
         return Ok(response);
     }
 
+    /**
+     * Fetches one playlist with its games hydrated and tag-filtered.
+     * Returns 404 (not 403) when the playlist exists but isn't visible — avoids leaking existence.
+     *
+     * <param name="id">string form of the playlist's ObjectId</param>
+     * <returns>200 with the playlist; 400 for a malformed id; 404 when it does
+     * not exist or is not visible to the caller</returns>
+     */
     // GET: api/Playlists/{id}
-    // Returns 404 (not 403) when the playlist exists but isn't visible — avoids leaking existence.
     [HttpGet("{id}")]
     public async Task<IActionResult> GetPlaylistById(string id)
     {
@@ -126,8 +154,15 @@ public class PlaylistsController : ControllerBase
         });
     }
 
+    /**
+     * Creates a playlist owned by the caller. IsDefault is always false on creation.
+     * Publishing is a separate, admin-only step.
+     *
+     * <param name="dto">the name and optional initial games</param>
+     * <returns>201 with the created playlist; 400 when the name is blank;
+     * 409 when the caller already has a playlist with that name</returns>
+     */
     // POST: api/Playlists
-    // Creates a playlist owned by the caller. IsDefault is always false on creation.
     [HttpPost]
     public async Task<IActionResult> CreatePlaylist([FromBody] CreatePlaylistDto dto)
     {
@@ -159,8 +194,16 @@ public class PlaylistsController : ControllerBase
         return CreatedAtAction(nameof(GetPlaylistById), new { id = playlist.Id.ToString() }, playlist);
     }
 
+    /**
+     * Full update (name + games). Owner-only. Does not touch IsDefault.
+     * The supplied game list replaces the existing one outright.
+     *
+     * <param name="id">string form of the playlist's ObjectId</param>
+     * <param name="dto">the new name and full game list</param>
+     * <returns>204 on success; 400 for a malformed id; 403 when the caller does
+     * not own it; 404 when not found; 409 on a name collision</returns>
+     */
     // PUT: api/Playlists/{id}
-    // Full update (name + games). Owner-only. Does not touch IsDefault.
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdatePlaylist(string id, [FromBody] UpdatePlaylistDto dto)
     {
@@ -187,8 +230,15 @@ public class PlaylistsController : ControllerBase
         return NoContent();
     }
 
+    /**
+     * Owner-only deletion. Deleting a published default removes it from
+     * everyone, since defaults are shared rather than copied.
+     *
+     * <param name="id">string form of the playlist's ObjectId</param>
+     * <returns>204 on success; 400 for a malformed id; 403 when the caller does
+     * not own it; 404 when not found</returns>
+     */
     // DELETE: api/Playlists/{id}
-    // Owner-only deletion.
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeletePlaylist(string id)
     {
@@ -205,8 +255,17 @@ public class PlaylistsController : ControllerBase
         return NoContent();
     }
 
+    /**
+     * Toggles IsDefault. Admin-only, and only the playlist's own admin-owner can publish it.
+     * Publishing makes the playlist visible to every user; unpublishing hides it
+     * again without deleting anyone's clones of it.
+     *
+     * <param name="id">string form of the playlist's ObjectId</param>
+     * <param name="dto">the publish state to set</param>
+     * <returns>204 on success; 400 for a malformed id; 403 when the caller does
+     * not own it; 404 when not found</returns>
+     */
     // POST: api/Playlists/{id}/publish
-    // Toggles IsDefault. Admin-only, and only the playlist's own admin-owner can publish it.
     [HttpPost("{id}/publish")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> SetPublishState(string id, [FromBody] PublishDto dto)
@@ -224,9 +283,17 @@ public class PlaylistsController : ControllerBase
         return NoContent();
     }
 
+    /**
+     * Copies a visible playlist into the caller's personal library.
+     * Name collision is resolved with " (Copy)" / " (Copy 2)" suffixes.
+     * This is how a clinician takes a published default and makes it their own
+     * to edit.
+     *
+     * <param name="id">string form of the source playlist's ObjectId</param>
+     * <returns>201 with the new playlist; 400 for a malformed id; 404 when the
+     * source does not exist or is not visible</returns>
+     */
     // POST: api/Playlists/{id}/clone
-    // Copies a visible playlist into the caller's personal library.
-    // Name collision is resolved with " (Copy)" / " (Copy 2)" suffixes.
     [HttpPost("{id}/clone")]
     public async Task<IActionResult> ClonePlaylist(string id)
     {
@@ -278,6 +345,16 @@ public class PlaylistsController : ControllerBase
         return CreatedAtAction(nameof(GetPlaylistById), new { id = clone.Id.ToString() }, playlistDto);
     }
 
+    /**
+     * Appends a game to a playlist the caller owns. Adding a game already
+     * present is a no-op rather than an error, so a double-tap is harmless.
+     *
+     * <param name="playlistId">string form of the playlist's ObjectId</param>
+     * <param name="gameId">vendor id of the game to add</param>
+     * <returns>200 on success or when already present; 400 for a malformed
+     * playlist id; 403 when the caller does not own the playlist or is not
+     * permitted the game; 404 when either the playlist or game is unknown</returns>
+     */
     // POST: api/Playlists/{playlistId}/add-game-to-playlist/{gameId}
     [HttpPost("{playlistId}/add-game-to-playlist/{gameId}")]
     public async Task<IActionResult> AddGameToPlaylistById(string playlistId, string gameId)
@@ -317,6 +394,15 @@ public class PlaylistsController : ControllerBase
         return Ok("Game already exists in this playlist.");
     }
 
+    /**
+     * Removes a game from a playlist the caller owns.
+     *
+     * <param name="playlistId">string form of the playlist's ObjectId</param>
+     * <param name="gameId">vendor id of the game to remove</param>
+     * <returns>200 on success; 400 for a malformed playlist id; 403 when the
+     * caller does not own it; 404 when the playlist is unknown or does not
+     * contain that game</returns>
+     */
     // POST: api/Playlists/{playlistId}/remove-game-from-playlist/{gameId}
     [HttpPost("{playlistId}/remove-game-from-playlist/{gameId}")]
     public async Task<IActionResult> RemoveGameFromPlaylistById(string playlistId, string gameId)
@@ -337,6 +423,17 @@ public class PlaylistsController : ControllerBase
         return Ok($"Removed game '{gameToRemove.Name}' from Playlist '{playlist.Name}'");
     }
 
+    /**
+     * Rearranges a playlist to match the order given. Ids not currently in the
+     * playlist are ignored, and any entry the caller omits is dropped — so this
+     * doubles as a bulk remove.
+     *
+     * <param name="playlistId">string form of the playlist's ObjectId</param>
+     * <param name="gameIds">the playlist's game ids in the desired order</param>
+     * <returns>200 with the resulting game count; 400 when the list is missing
+     * or the id is malformed; 403 when the caller does not own it; 404 when not
+     * found</returns>
+     */
     // PUT: api/Playlists/{playlistId}/update-order
     [HttpPut("{playlistId}/update-order")]
     public async Task<IActionResult> UpdatePlaylistOrder(string playlistId, [FromBody] List<string> gameIds)
@@ -360,6 +457,18 @@ public class PlaylistsController : ControllerBase
         return Ok(new { Message = $"Order updated for playlist '{playlist.Name}'", GameCount = playlist.Games.Count });
     }
 
+    /**
+     * Shapes a game for the API, expanding its tag ids into full tag objects
+     * with their category details. Tags are ordered by category first, then
+     * within the category, so the UI can render them in a stable grouping
+     * without sorting them itself. Tags that no longer exist are dropped, and a
+     * tag whose category is missing falls back to "Unknown".
+     *
+     * <param name="game">the game to shape</param>
+     * <param name="tagsById">every known tag, keyed by id</param>
+     * <param name="categoriesById">every known category, keyed by id</param>
+     * <returns>an anonymous object ready to serialise</returns>
+     */
     private static object ResolveGameResponse(
         Game game,
         Dictionary<ObjectId, Models.Tag> tagsById,
@@ -406,6 +515,14 @@ public class PlaylistsController : ControllerBase
         };
     }
 
+    /**
+     * Recognises the per-owner name collision raised by the "owner_name_unique"
+     * index, checking one level of inner exception because EF Core wraps the
+     * driver's write exception.
+     *
+     * <param name="ex">the exception thrown by the save</param>
+     * <returns>true when it was caused by a duplicate key</returns>
+     */
     private static bool IsDuplicateKeyError(Exception ex)
     {
         if (ex is MongoWriteException mwe)
@@ -415,6 +532,14 @@ public class PlaylistsController : ControllerBase
         return false;
     }
 
+    /**
+     * Finds a free name for a clone by appending " (Copy)", then " (Copy 2)",
+     * " (Copy 3)", and so on until one is unused by that owner.
+     *
+     * <param name="sourceName">name of the playlist being cloned</param>
+     * <param name="ownerId">the user the clone will belong to</param>
+     * <returns>a name not currently used by that owner</returns>
+     */
     private async Task<string> GenerateUniqueCloneName(string sourceName, ObjectId ownerId)
     {
         var candidate = $"{sourceName} (Copy)";
@@ -428,19 +553,27 @@ public class PlaylistsController : ControllerBase
     }
 }
 
+/** Request body for creating a playlist. */
 public class CreatePlaylistDto
 {
+    /** Display name; must be unused by the caller. */
     public string Name { get; set; }
+    /** Games to start the playlist with, or null for an empty one. */
     public List<PlaylistGame>? Games { get; set; }
 }
 
+/** Request body for a full playlist update; both fields are replaced wholesale. */
 public class UpdatePlaylistDto
 {
+    /** Display name to set. */
     public string Name { get; set; }
+    /** The complete new game list; null clears the playlist. */
     public List<PlaylistGame>? Games { get; set; }
 }
 
+/** Request body for publishing or unpublishing a playlist. */
 public class PublishDto
 {
+    /** True to share the playlist with every user, false to make it private again. */
     public bool IsDefault { get; set; }
 }

@@ -7,8 +7,19 @@ using Microsoft.Extensions.Logging;
 
 namespace LUMOplay_Remote_Controller
 {
+    /** Composition root for the MAUI app: fonts, services, and pages. */
     public static class MauiProgram
     {
+        /**
+         * Builds the configured application.
+         *
+         * Lifetimes are deliberate: the API client and the managers are
+         * singletons because they hold shared device and playlist state, and the
+         * dashboard is a singleton so returning to it preserves what the user
+         * was looking at. The other pages are transient and rebuilt per visit.
+         *
+         * <returns>the assembled MauiApp, ready for the platform head to run</returns>
+         */
         public static MauiApp CreateMauiApp()
         {
             var builder = MauiApp.CreateBuilder();
@@ -19,6 +30,7 @@ namespace LUMOplay_Remote_Controller
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+                    // Supplies the play/pause glyphs emitted by BoolToPlayPauseIconConverter.
                     fonts.AddFont("MaterialIcons-Regular.ttf", "MaterialIcons");
                 });
 

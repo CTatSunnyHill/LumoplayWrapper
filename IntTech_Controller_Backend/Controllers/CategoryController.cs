@@ -8,6 +8,10 @@ using System.Text.RegularExpressions;
 
 namespace IntTech_Controller_Backend.Controllers
 {
+    /**
+     * Manages the top-level groupings that tags live in. Any signed-in user may
+     * read categories; only admins may change them.
+     */
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
@@ -15,11 +19,19 @@ namespace IntTech_Controller_Backend.Controllers
     {
         private readonly IntTechDBContext _context;
 
+        /**
+         * <param name="context">database context for the categories and tags collections</param>
+         */
         public CategoryController(IntTechDBContext context)
         {
             _context = context;
         }
 
+        /**
+         * Lists every category in display order, falling back to name for ties.
+         *
+         * <returns>200 with the sorted categories</returns>
+         */
         // GET: api/Category
         [HttpGet]
         public async Task<IActionResult> GetCategories()
@@ -29,6 +41,12 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(sorted);
         }
 
+        /**
+         * Fetches one category.
+         *
+         * <param name="id">string form of the category's ObjectId</param>
+         * <returns>200 with the category; 400 for a malformed id; 404 when not found</returns>
+         */
         // GET: api/Category/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCategory(string id)
@@ -40,6 +58,14 @@ namespace IntTech_Controller_Backend.Controllers
 
         }
 
+        /**
+         * Creates a category. Names are unique, compared case-insensitively, and
+         * the slug is derived from the name. When no display order is supplied
+         * the category is appended after the current last one.
+         *
+         * <param name="dto">the name, optional description, and optional position</param>
+         * <returns>200 with the created category; 400 when the name is blank or taken</returns>
+         */
         // POST: api/Category
         [HttpPost]
         [Authorize(Roles = "Admin")]
@@ -75,6 +101,15 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(newCategory);
         }
 
+        /**
+         * Updates a category in place; omitted fields are left alone. Renaming
+         * regenerates the slug.
+         *
+         * <param name="id">string form of the category's ObjectId</param>
+         * <param name="dto">the fields to change</param>
+         * <returns>200 with the updated category; 400 for a malformed id or a
+         * name already in use; 404 when not found</returns>
+         */
         // PUT: api/Category/{id}
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
@@ -108,6 +143,15 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(category);
         }
 
+        /**
+         * Reorders categories to match the sequence given. The whole request is
+         * validated — ids parseable, distinct, and all present — before anything
+         * is written, so a partial reorder can never be persisted.
+         *
+         * <param name="categoryIds">every category id, in the desired order</param>
+         * <returns>200 with the number reordered; 400 when the list is empty or
+         * contains an invalid, duplicated, or unknown id</returns>
+         */
         // PUT: api/Category/reorder
         // Body: ["categoryId1", "categoryId2", ...] in the new desired order.
         // Assigns DisplayOrder = list index for each requested category after validating the request.
@@ -123,6 +167,8 @@ namespace IntTech_Controller_Backend.Controllers
             var duplicateIds = new List<string>();
             var seenOids = new HashSet<ObjectId>();
 
+            // Collect every problem rather than failing on the first, so the
+            // admin sees the full picture in one response.
             foreach (var id in categoryIds)
             {
                 if (!ObjectId.TryParse(id, out var oid))
@@ -183,6 +229,14 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(new { Message = "Category order updated", Count = categories.Count });
         }
 
+        /**
+         * Deletes a category, refusing while it still holds tags so no tag is
+         * left pointing at a category that no longer exists.
+         *
+         * <param name="id">string form of the category's ObjectId</param>
+         * <returns>200 on success; 400 for a malformed id or a category that
+         * still has tags; 404 when not found</returns>
+         */
         // DELETE: api/Category/{id}
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
@@ -201,6 +255,18 @@ namespace IntTech_Controller_Backend.Controllers
             return Ok(new { Message = "Category deleted successfully" });
         }
 
+        /**
+         * Derives a URL-safe slug from a category name: lowercased, whitespace
+         * replaced, anything outside [a-z0-9-] dropped, and runs of hyphens
+         * collapsed.
+         *
+         * NOTE: whitespace is replaced with "-0", not "-", so "Body Part" yields
+         * "body-0part". Almost certainly a typo, left as-is because existing
+         * stored slugs depend on it.
+         *
+         * <param name="name">the category name to convert</param>
+         * <returns>the slug form of that name</returns>
+         */
         private static string GenerateSlug(string name)
         {
             var slug = name.ToLower();

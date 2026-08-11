@@ -5,20 +5,26 @@
 
 namespace LUMOplay_Remote_Controller.WinUI
 {
-    /// <summary>
-    /// Provides application-specific behavior to supplement the default Application class.
-    /// </summary>
+    /**
+     * Provides application-specific behavior to supplement the default Application class.
+     * Windows head of the app; hands off to the shared MAUI startup.
+     */
     public partial class App : MauiWinUIApplication
     {
-        /// <summary>
-        /// Initializes the singleton application object.  This is the first line of authored code
-        /// executed, and as such is the logical equivalent of main() or WinMain().
-        /// </summary>
+        /**
+         * Initializes the singleton application object.  This is the first line of authored code
+         * executed, and as such is the logical equivalent of main() or WinMain().
+         */
         public App()
         {
             this.InitializeComponent();
         }
 
+        /**
+         * Builds the shared MAUI app.
+         *
+         * <returns>the configured app from <see cref="MauiProgram"/></returns>
+         */
         protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
     }
 

@@ -10,6 +10,10 @@ using System.Text.Json;
 
 namespace IntTech_Controller_Backend.Controllers
 {
+    /**
+     * Issues the JWTs the rest of the API authenticates with. This is the only
+     * controller reachable without a token.
+     */
     [ApiController]
     [Route("api/[controller]")]
     public class AuthController: ControllerBase
@@ -17,14 +21,28 @@ namespace IntTech_Controller_Backend.Controllers
         private readonly IntTechDBContext _context;
         private readonly IConfiguration _config;
 
-        public AuthController(IntTechDBContext context, IConfiguration config) 
+        /**
+         * <param name="context">database context used to look up the account</param>
+         * <param name="config">configuration supplying the JWT signing key</param>
+         */
+        public AuthController(IntTechDBContext context, IConfiguration config)
         {
             _context = context;
             _config = config;
         }
 
+        /**
+         * Signs a user in and returns a token valid for seven days. The token
+         * carries the user's role, allowed locations, and allowed tags, so most
+         * access checks need no database lookup; it also carries the session
+         * version, which lets an admin's edits invalidate it immediately.
+         *
+         * <param name="request">the username and password to verify</param>
+         * <returns>200 with the token and the user's identity; 400 when either
+         * field is missing; 401 when the credentials do not match</returns>
+         */
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request) 
+        public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             if (request == null)
             {
@@ -41,12 +59,15 @@ namespace IntTech_Controller_Backend.Controllers
 
             var normalizedUsername = username.ToLower();
 
+            // One combined message for both failure modes, so the response does
+            // not reveal whether the username exists.
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == normalizedUsername);
-            if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash)) 
+            if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             {
                 return Unauthorized(new { message = "Invalid username or password" });
             }
 
+            // Id lists travel as JSON strings because a claim holds only one value.
             var locationIds = (user.AllowedLocationsIds ?? []).Select(id => id.ToString()).ToList();
             var tagIds = (user.AllowedTagIds ?? []).Select(id => id.ToString()).ToList();
             var claims = new List<Claim>

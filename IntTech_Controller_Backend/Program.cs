@@ -16,7 +16,7 @@ using MongoDB.Driver;
 var builder = WebApplication.CreateBuilder(args);
 
 var mongoStr = builder.Configuration.GetConnectionString("MongoDb");
-builder.Services.AddDbContext<IntTechDBContext>(options => options.UseMongoDB(mongoStr ?? "mongo://localhost:27017", "inttech_controller"));
+builder.Services.AddDbContext<IntTechDBContext>(options => options.UseMongoDB(mongoStr ?? "mongodb://localhost:27017", "inttech_controller"));
 
 // --- JWT Authentication Setup ---
 
